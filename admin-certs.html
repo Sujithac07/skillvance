@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Certificate Manager</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #06060a; color: #eeeef2; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        h1 { color: #7c3aed; }
+        .logout-btn { padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .logout-btn:hover { opacity: 0.9; }
+        .section { background: #0c0c14; border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 24px; margin-bottom: 24px; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; }
+        input, select, textarea { width: 100%; padding: 10px; background: #111119; border: 1px solid rgba(255,255,255,0.06); color: #eeeef2; border-radius: 8px; font-size: 14px; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #7c3aed; }
+        button { padding: 12px 24px; background: linear-gradient(135deg, #7c3aed, #06b6d4); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        button:hover { opacity: 0.9; }
+        .success { color: #22c55e; padding: 12px; background: rgba(34,197,94,0.1); border-radius: 8px; margin-bottom: 16px; }
+        .error { color: #ef4444; padding: 12px; background: rgba(239,68,68,0.1); border-radius: 8px; margin-bottom: 16px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        th { background: rgba(124,58,237,0.1); font-weight: 600; }
+        .delete-btn { padding: 6px 12px; background: #ef4444; font-size: 12px; margin-top: 8px; }
+        textarea { font-family: monospace; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Skillvance Admin - Certificate Manager</h1>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+
+        <!-- Add Certificate -->
+        <div class="section">
+            <h2>Add New Certificate</h2>
+            <div id="message"></div>
+            <div class="form-group">
+                <label>Certificate ID (e.g., SKV2025ML00001)</label>
+                <input type="text" id="certId" placeholder="SKV2025ML00001">
+            </div>
+            <div class="form-group">
+                <label>Student Name</label>
+                <input type="text" id="certName" placeholder="John Doe">
+            </div>
+            <div class="form-group">
+                <label>Domain</label>
+                <select id="certDomain">
+                    <option>Machine Learning Engineer</option>
+                    <option>Data Scientist</option>
+                    <option>Data Analyst</option>
+                    <option>Web Developer</option>
+                    <option>Cybersecurity Engineer</option>
+                    <option>Blockchain Engineer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Completion Date (YYYY-MM-DD)</label>
+                <input type="date" id="certDate">
+            </div>
+            <div class="form-group">
+                <label>Mentor Name</label>
+                <input type="text" id="mentorName" placeholder="Mentor Name">
+            </div>
+            <button onclick="addCertificate()">Add Certificate</button>
+        </div>
+
+        <!-- Current Certificates -->
+        <div class="section">
+            <h2>Current Certificates</h2>
+            <table id="certTable">
+                <thead>
+                    <tr>
+                        <th>Certificate ID</th>
+                        <th>Student Name</th>
+                        <th>Domain</th>
+                        <th>Completion Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="certTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Export/Backup -->
+        <div class="section">
+            <h2>⬇️ Export Data</h2>
+            <p style="margin-bottom: 16px; color: #9595ad;">Copy this code and replace the certificatesDB in certificates.js</p>
+            <textarea id="exportCode" style="height: 200px; font-family: monospace; font-size: 12px;"></textarea><br><br>
+            <button onclick="copyToClipboard()">Copy to Clipboard</button>
+            <button onclick="downloadAsFile()" style="background: #06b6d4; margin-left: 10px;">Download File</button>
+        </div>
+
+        <!-- Instructions -->
+        <div class="section" style="background: rgba(124,58,237,0.05); border: 1px solid rgba(124,58,237,0.2);">
+            <h2>📖 How to Use</h2>
+            <ol style="margin-left: 20px;">
+                <li>✅ Add certificates above with unique IDs</li>
+                <li>✅ Data is saved in your browser (localStorage)</li>
+                <li>✅ Export the code regularly and update certificates.js</li>
+                <li>✅ When someone verifies, it checks your certificates.js file</li>
+                <li>✅ Keep certificates.js updated with latest entries</li>
+            </ol>
+        </div>
+    </div>
+
+    <script src="certificates.js"></script>
+    <script>
+        // CHECK IF LOGGED IN - REDIRECT TO LOGIN IF NOT
+        if (localStorage.getItem('adminLoggedIn') !== 'true') {
+            window.location.href = 'admin-login.html';
+        }
+
+        function logout() {
+            localStorage.removeItem('adminLoggedIn');
+            localStorage.removeItem('adminLoginTime');
+            window.location.href = 'admin-login.html';
+        }
+
+        // Load from localStorage
+        function loadCertificates() {
+            const saved = localStorage.getItem('skillvanceCerts');
+            return saved ? JSON.parse(saved) : [...certificatesDB];
+        }
+
+        function saveCertificates(certs) {
+            localStorage.setItem('skillvanceCerts', JSON.stringify(certs));
+            updateTable();
+            updateExport();
+        }
+
+        function addCertificate() {
+            const id = document.getElementById('certId').value.trim().toUpperCase();
+            const name = document.getElementById('certName').value.trim();
+            const domain = document.getElementById('certDomain').value;
+            const date = document.getElementById('certDate').value;
+            const mentor = document.getElementById('mentorName').value.trim();
+            const msg = document.getElementById('message');
+
+            if (!id || !name || !date || !mentor) {
+                msg.innerHTML = '<div class="error">❌ Please fill all fields</div>';
+                return;
+            }
+
+            const certs = loadCertificates();
+            if (certs.some(c => c.id === id)) {
+                msg.innerHTML = '<div class="error">❌ Certificate ID already exists</div>';
+                return;
+            }
+
+            certs.push({ id, name, domain, completionDate: date, mentorName: mentor, verified: true });
+            saveCertificates(certs);
+
+            msg.innerHTML = '<div class="success">✅ Certificate added successfully!</div>';
+            document.getElementById('certId').value = '';
+            document.getElementById('certName').value = '';
+            document.getElementById('certDate').value = '';
+            document.getElementById('mentorName').value = '';
+        }
+
+        function deleteCertificate(id) {
+            if (confirm('Delete this certificate?')) {
+                let certs = loadCertificates();
+                certs = certs.filter(c => c.id !== id);
+                saveCertificates(certs);
+            }
+        }
+
+        function updateTable() {
+            const certs = loadCertificates();
+            const tbody = document.getElementById('certTableBody');
+            tbody.innerHTML = certs.map(c => `
+                <tr>
+                    <td>${c.id}</td>
+                    <td>${c.name}</td>
+                    <td>${c.domain}</td>
+                    <td>${c.completionDate}</td>
+                    <td><button class="delete-btn" onclick="deleteCertificate('${c.id}')">Delete</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function updateExport() {
+            const certs = loadCertificates();
+            const code = `const certificatesDB = ${JSON.stringify(certs, null, 4)};`;
+            document.getElementById('exportCode').value = code;
+        }
+
+        function copyToClipboard() {
+            const code = document.getElementById('exportCode');
+            code.select();
+            document.execCommand('copy');
+            alert('✅ Copied! Update certificates.js with this code');
+        }
+
+        function downloadAsFile() {
+            const certs = loadCertificates();
+            const code = `const certificatesDB = ${JSON.stringify(certs, null, 4)};\n\n// Add this to your certificates.js file`;
+            const blob = new Blob([code], { type: 'text/javascript' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'certificates_data.js';
+            a.click();
+        }
+
+        // Initialize
+        updateTable();
+        updateExport();
+    </script>
+</body>
+</html>

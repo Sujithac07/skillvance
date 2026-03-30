@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Verify the authenticity of any Skillvance Technologies certificate instantly using the unique Certificate ID.">
+    <title>Verify Certificate — Skillvance Technologies</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect rx='20' width='100' height='100' fill='%237c3aed'/><text x='50' y='68' font-size='60' text-anchor='middle' fill='white' font-weight='bold'>S</text></svg>">
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar scrolled" id="navbar" style="top:0">
+        <div class="container">
+            <a href="index.html" class="nav-logo"><img src="skillvance_logo_color.png" alt="Skillvance Technologies" class="logo-img"></a>
+            <div class="nav-links" id="navLinks">
+                <a href="index.html">Home</a>
+                <a href="about.html">About</a>
+                <a href="careers.html">Careers & Internships</a>
+                <a href="verify.html" class="active">Verify Certificate</a>
+                <a href="contact.html">Contact</a>
+                <a href="contact.html" class="nav-cta">Enquire Now</a>
+            </div>
+            <div class="hamburger" id="hamburger" onclick="toggleNav()"><span></span><span></span><span></span></div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="section" style="padding-top:160px;padding-bottom:60px;background:var(--bg-secondary)">
+        <div class="container text-center">
+            <p class="section-label reveal">Authenticate</p>
+            <h1 class="section-title reveal">Certificate Verification</h1>
+            <p class="section-subtitle mx-auto reveal">Verify the authenticity of any Skillvance certificate instantly.
+            </p>
+        </div>
+    </section>
+
+    <!-- Verification -->
+    <section class="section">
+        <div class="container">
+            <div class="verify-container reveal-scale">
+                <div class="icon-box"
+                    style="margin:0 auto 24px;width:64px;height:64px;border-radius:50%;background:rgba(124,58,237,0.08)">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"
+                        style="width:28px;height:28px">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                        <polyline points="22 4 12 14.01 9 11.01" />
+                    </svg>
+                </div>
+                <h3 style="font-family:var(--font-heading);margin-bottom:8px;font-size:1.3rem">Enter Certificate Details
+                </h3>
+                <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:28px">Enter the Certificate ID
+                    printed at the bottom of your certificate to verify its authenticity.</p>
+                <div class="verify-input-wrap">
+                    <input class="verify-input" type="text" id="certId" placeholder="e.g., SKV2025ML00123"
+                        aria-label="Certificate ID">
+                </div>
+                <button class="verify-btn" onclick="verifyCertificate()">Verify Certificate</button>
+                <div class="verify-result" id="verifyResult"></div>
+                <div class="verify-info">
+                    <h4>How to Find Your Certificate ID</h4>
+                    <p>Your unique Certificate ID is printed at the bottom of your certificate. It starts with
+                        <strong>"SKV"</strong> followed by the year, domain code, and a unique number.<br><br>
+                        Format: <strong>SKV2025ML00123</strong><br><br>
+                        Can't find it? Contact <a href="mailto:support@skillvancetechnologies.com"
+                            style="color:var(--accent-2)">support@skillvancetechnologies.com</a> or message us on <a
+                            href="https://wa.me/916281017049" style="color:var(--accent-2)">WhatsApp</a>.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <img src="skillvance_logo_color.png" alt="Skillvance Technologies" class="footer-logo-img" style="max-width:180px;margin-bottom:16px">
+                    <div class="logo"><span>SKILLVANCE</span> TECHNOLOGIES</div>
+                    <p>Empowering students with corporate-style internships and hands-on skill development programs.</p>
+                    <div class="footer-badges"><span class="footer-badge">MSME Certified</span><span
+                            class="footer-badge">100% Virtual</span></div>
+                </div>
+                <div>
+                    <h4>Our Expertise</h4>
+                    <ul>
+                        <li><a href="about.html">Skill Development</a></li>
+                        <li><a href="about.html">Corporate Training</a></li>
+                        <li><a href="careers.html">Internship Programs</a></li>
+                        <li><a href="about.html">Industry Mentorship</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Domains</h4>
+                    <ul>
+                        <li><a href="careers.html#domains">Machine Learning</a></li>
+                        <li><a href="careers.html#domains">Data Scientist</a></li>
+                        <li><a href="careers.html#domains">Data Analyst</a></li>
+                        <li><a href="careers.html#domains">Web Developer</a></li>
+                        <li><a href="careers.html#domains">Cybersecurity</a></li>
+                        <li><a href="careers.html#domains">Blockchain</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="about.html">About</a></li>
+                        <li><a href="careers.html">Careers & Internships</a></li>
+                        <li><a href="verify.html">Verify Certificate</a></li>
+                        <li><a href="contact.html">Contact Us</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">&copy; 2025 Skillvance Technologies. All Rights Reserved.</div>
+        </div>
+    </footer>
+
+    <a href="https://wa.me/916281017049" target="_blank" class="whatsapp-fab" aria-label="Chat on WhatsApp">
+        <svg viewBox="0 0 24 24">
+            <path
+                d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+            <path
+                d="M12 0C5.373 0 0 5.373 0 12c0 2.127.555 4.126 1.528 5.867L.06 23.495l5.753-1.508A11.94 11.94 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-1.875 0-3.633-.5-5.15-1.373l-.37-.218-3.83 1.005 1.02-3.73-.24-.38A9.72 9.72 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z" />
+        </svg>
+        <span class="tooltip">Chat with us on WhatsApp</span>
+    </a>
+
+    <script src="script.js"></script>
+    <script src="certificates.js"></script>
+</body>
+
+</html>
