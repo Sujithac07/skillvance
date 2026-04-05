@@ -91,6 +91,7 @@ async function seedAdminIfNeeded() {
   const username = process.env.ADMIN_USERNAME;
   const password = process.env.ADMIN_PASSWORD;
   const email = process.env.ADMIN_EMAIL;
+  const shouldSync = String(process.env.ADMIN_SYNC_ON_START || 'true').trim().toLowerCase() !== 'false';
 
   if (!username || !password || !email) {
     return;
@@ -99,8 +100,36 @@ async function seedAdminIfNeeded() {
   const normalizedUsername = String(username).trim().toLowerCase();
   const normalizedEmail = String(email).trim().toLowerCase();
 
-  const existing = await Admin.findOne({ username: normalizedUsername });
+  const existing = await Admin.findOne({
+    $or: [{ username: normalizedUsername }, { email: normalizedEmail }]
+  }).select('+password');
   if (existing) {
+    if (!shouldSync) {
+      return;
+    }
+
+    let hasChanges = false;
+
+    if (existing.username !== normalizedUsername) {
+      existing.username = normalizedUsername;
+      hasChanges = true;
+    }
+
+    if (existing.email !== normalizedEmail) {
+      existing.email = normalizedEmail;
+      hasChanges = true;
+    }
+
+    if (!(await existing.comparePassword(String(password)))) {
+      // Assign plain password so model pre-save hook can hash with configured rounds.
+      existing.password = String(password);
+      hasChanges = true;
+    }
+
+    if (hasChanges) {
+      await existing.save();
+    }
+
     return;
   }
 
