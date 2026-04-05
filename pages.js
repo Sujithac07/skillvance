@@ -37,12 +37,12 @@ const domainData = {
         careers: ['Security Analyst', 'Pen Tester', 'SOC Analyst', 'Security Engineer', 'Forensics Analyst', 'CISO'],
         desc: 'Protect what matters. Hunt vulnerabilities, defend networks'
     },
-    bc: {
-        name: 'Blockchain Engineer', icon: 'bc', duration: '10–12 weeks', difficulty: 'Intermediate–Advanced',
-        tech: ['Solidity', 'Ethereum', 'Web3.js', 'Hardhat', 'IPFS', 'React', 'Node.js'],
-        topics: ['Smart Contracts', 'DeFi Protocols', 'Token Standards', 'Consensus Mechanisms', 'dApp Development', 'Web3 Security'],
-        careers: ['Blockchain Developer', 'Smart Contract Engineer', 'DeFi Developer', 'Web3 Engineer', 'Protocol Engineer', 'Blockchain Consultant'],
-        desc: 'Build the future of finance. Master smart contracts, DeFi, and Web3'
+    ai: {
+        name: 'Gen AI Engineer', icon: 'ai', duration: '8–10 weeks', difficulty: 'Intermediate',
+        tech: ['Python', 'LLMs', 'Langchain', 'OpenAI API', 'Prompt Engineering', 'Vector DB', 'RAG'],
+        topics: ['Large Language Models', 'Prompt Engineering', 'Fine-tuning', 'RAG Systems', 'AI Agent Design', 'Ethical AI'],
+        careers: ['AI Engineer', 'Prompt Engineer', 'ML Engineer', 'AI Architect', 'LLM Specialist', 'AI Solutions Engineer'],
+        desc: 'Build intelligent applications powered by generative AI — LLMs, agents, and production systems'
     }
 };
 

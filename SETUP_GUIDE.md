@@ -100,7 +100,7 @@ SKV 2025 ML 00001
 │   │       DA = Data Analyst
 │   │       WEB = Web Developer
 │   │       CY = Cybersecurity
-│   │       BC = Blockchain
+│   │       AI = Generative AI
 │   └─ Year
 └─ Skillvance prefix
 ```
