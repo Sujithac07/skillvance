@@ -43,14 +43,28 @@ let initialized = false;
 let initializationPromise = null;
 
 function getAllowedOrigins() {
+  function normalizeOrigin(value) {
+    const rawValue = String(value || '').trim();
+    if (!rawValue) {
+      return null;
+    }
+
+    // Accept full URLs in env (including accidental paths) and convert to origin.
+    try {
+      return new URL(rawValue).origin;
+    } catch (_error) {
+      return rawValue;
+    }
+  }
+
   const raw = process.env.CORS_ORIGIN || '';
   const configuredOrigins = raw
     .split(',')
-    .map(origin => origin.trim())
+    .map(normalizeOrigin)
     .filter(Boolean);
 
   if (process.env.VERCEL_URL) {
-    configuredOrigins.push(`https://${process.env.VERCEL_URL}`);
+    configuredOrigins.push(normalizeOrigin(`https://${process.env.VERCEL_URL}`));
   }
 
   const uniqueConfiguredOrigins = [...new Set(configuredOrigins)];
