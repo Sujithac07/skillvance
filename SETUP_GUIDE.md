@@ -1,8 +1,8 @@
-# 🚀 SKILLVANCE - SETUP GUIDE
+# SKILLVANCE - SETUP GUIDE
 
-## ✅ WHAT'S NOW WORKING
+## WHAT'S NOW WORKING
 
-### 1. **CONTACT FORM** ✓
+### 1. **CONTACT FORM** -
 - **What it does:** Sends all enquiries directly to your email
 - **Email:** skillvancetechnologies@gmail.com
 - **How it works:** FormSubmit.co service (free, no backend needed)
@@ -18,7 +18,7 @@
 
 ---
 
-### 2. **CERTIFICATE VERIFICATION** ✓
+### 2. **CERTIFICATE VERIFICATION** -
 - **What it does:** Verifies student certificates with unique IDs
 - **Status:** Shows "Verified" with details OR "Not Found"
 - **Test with:** `SKV2025ML00001`
@@ -27,12 +27,12 @@
 ```
 1. Go to Verify Certificate page
 2. Enter: SKV2025ML00001
-3. Should show ✓ Certificate Verified with student details
+3. Should show - Certificate Verified with student details
 ```
 
 ---
 
-### 3. **ADMIN PANEL** ✓ (NEW!)
+### 3. **ADMIN PANEL** - (NEW!)
 
 **Where:** `/admin.html` (redirects to login)
 **Protected:** Yes - Login required!
@@ -41,7 +41,7 @@
 - Username: `ADMIN_USERNAME`
 - Password: `ADMIN_PASSWORD`
 
-⚠️ Use strong non-default credentials in backend `.env`.
+ Use strong non-default credentials in backend `.env`.
 
 **What you do:**
 1. Go to `/admin.html`
@@ -56,53 +56,53 @@
 
 ---
 
-## 📋 STEP-BY-STEP SETUP
+## STEP-BY-STEP SETUP
 
 ### **Step 1: Test Contact Form**
 1. Go to `/contact.html`
 2. Fill: Name, Email, Phone, Domain, Message
 3. Click "Send Enquiry"
-4. Check your email in 1-2 minutes ✅
+4. Check your email in 1-2 minutes 
 
 ### **Step 2: Add Your First Certificate**
 1. Go to `/admin.html`
 2. Login with admin credentials
 3. Add the form:
-   - ID: `SKV2025ML00002`
-   - Name: `Your Name`
-   - Domain: Select from list
-   - Date: Today's date
-   - Mentor: Your name
+ - ID: `SKV2025ML00002`
+ - Name: `Your Name`
+ - Domain: Select from list
+ - Date: Today's date
+ - Mentor: Your name
 4. Click "Add Certificate"
-5. It appears in the table ✅
+5. It appears in the table 
 
 ### **Step 3: Export & Update certificates.js**
 1. In admin panel, scroll to "Export Data"
 2. Click "Copy to Clipboard"
 3. Replace the whole `const certificatesDB = [...]` in `certificates.js`
-4. Save the file ✅
+4. Save the file 
 
 ### **Step 4: Test Certificate Verification**
 1. Go to `/verify.html`
 2. Enter the ID you just added (e.g., `SKV2025ML00002`)
-3. Should show "✓ Certificate Verified" with details ✅
+3. Should show "- Certificate Verified" with details 
 
 ---
 
-## 🔑 CERTIFICATE ID FORMAT
+## CERTIFICATE ID FORMAT
 
 ```
 SKV 2025 ML 00001
-│   │    │  └─ Sequential number (starts at 00001)
-│   │    └─ Domain code:
-│   │       ML = Machine Learning
-│   │       DS = Data Science
-│   │       DA = Data Analyst
-│   │       WEB = Web Developer
-│   │       CY = Cybersecurity
-│   │       AI = Generative AI
-│   └─ Year
-└─ Skillvance prefix
+ Sequential number (starts at 00001)
+ Domain code:
+ ML = Machine Learning
+ DS = Data Science
+ DA = Data Analyst
+ WEB = Web Developer
+ CY = Cybersecurity
+ AI = Generative AI
+ Year
+ Skillvance prefix
 ```
 
 **Examples:**
@@ -112,7 +112,7 @@ SKV 2025 ML 00001
 
 ---
 
-## 📧 CONTACT FORM EMAILS
+## CONTACT FORM EMAILS
 
 **Your email:** skillvancetechnologies@gmail.com
 
@@ -121,20 +121,20 @@ When someone submits the form, you'll get:
 From: Their Email
 Subject: New Contact Form Submission
 Body:
-  Name: [name]
-  Email: [email]
-  Phone: [phone]
-  Domain: [domain]
-  Message: [message]
+ Name: [name]
+ Email: [email]
+ Phone: [phone]
+ Domain: [domain]
+ Message: [message]
 ```
 
 ---
 
-## 🎯 WHAT HAPPENS WHEN STUDENT VERIFIES CERT
+## WHAT HAPPENS WHEN STUDENT VERIFIES CERT
 
 **If certificate exists:**
 ```
-✓ Certificate Verified
+- Certificate Verified
 Name: John Doe
 Domain: Machine Learning Engineer
 Completed: 2025-03-29
@@ -143,13 +143,13 @@ Mentor: Mentor Name
 
 **If not found:**
 ```
-❌ Certificate not found.
+ Certificate not found.
 Please check your ID or contact support@skillvancetechnologies.com
 ```
 
 ---
 
-## 📁 FILES CREATED/MODIFIED
+## FILES CREATED/MODIFIED
 
 **New files:**
 - `certificates.js` - Certificate database
@@ -162,19 +162,19 @@ Please check your ID or contact support@skillvancetechnologies.com
 
 ---
 
-## 🔄 WORKFLOW
+## WORKFLOW
 
 ```
 Student completes program
-    ↓
+ 
 You add certificate in admin panel
-    ↓
+ 
 Export & update certificates.js
-    ↓
+ 
 Student enters ID to verify
-    ↓
+ 
 System checks certificates.js
-    ↓
+ 
 Shows "VERIFIED" or "NOT FOUND"
 ```
 
@@ -182,7 +182,7 @@ Shows "VERIFIED" or "NOT FOUND"
 
 ---
 
-## 🔐 ADMIN PANEL SECURITY
+## ADMIN PANEL SECURITY
 
 ### Credential Management
 
@@ -192,16 +192,16 @@ Shows "VERIFIED" or "NOT FOUND"
 4. Login uses `POST /api/auth/login` and returns JWT.
 
 ### Security Tips:
-- ✅ Login required (encrypted in browser)
-- ✅ Auto-logout on browser close
-- ✅ Change password from defaults
-- ✅ Keep credentials SECRET
-- ✅ Click Logout when done
-- ✅ Don't share login info
+- Login required (encrypted in browser)
+- Auto-logout on browser close
+- Change password from defaults
+- Keep credentials SECRET
+- Click Logout when done
+- Don't share login info
 
 ---
 
-## 📞 SUPPORT
+## SUPPORT
 
 - **Contact form issues:** Check your spam folder or email settings
 - **Certificate verification issues:** Make sure you exported correctly from admin panel
@@ -210,7 +210,7 @@ Shows "VERIFIED" or "NOT FOUND"
 
 ---
 
-## ✨ NEXT STEPS (Optional)
+## NEXT STEPS (Optional)
 
 When you have time:
 1. Change admin password from defaults
@@ -221,4 +221,4 @@ When you have time:
 
 ---
 
-**Everything is live and working! 🚀**
+**Everything is live and working! **

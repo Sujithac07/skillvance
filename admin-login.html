@@ -1,188 +1,188 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login - Skillvance</title>
-    <link rel="icon" href="/assets/favicon.png" type="image/png">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #06060a 0%, #0c0c14 100%);
-            color: #eeeef2;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .login-container {
-            background: #0c0c14;
-            border: 1px solid rgba(124, 58, 237, 0.3);
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 400px;
-            width: 100%;
-            box-shadow: 0 0 60px rgba(124, 58, 237, 0.1);
-        }
-        .logo { text-align: center; margin-bottom: 30px; }
-        .logo h1 { font-size: 24px; color: #7c3aed; margin-bottom: 8px; }
-        .logo p { color: #9595ad; font-size: 14px; }
-        h2 { margin-bottom: 24px; text-align: center; }
-        .form-group { margin-bottom: 16px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; }
-        input {
-            width: 100%;
-            padding: 12px;
-            background: #111119;
-            border: 1px solid rgba(255,255,255,0.06);
-            color: #eeeef2;
-            border-radius: 8px;
-            font-size: 16px;
-        }
-        input:focus { outline: none; border-color: #7c3aed; }
-        button {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #7c3aed, #06b6d4);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 16px;
-            margin-top: 8px;
-        }
-        button:hover { opacity: 0.9; }
-        .error {
-            color: #ef4444;
-            padding: 12px;
-            background: rgba(239,68,68,0.1);
-            border-radius: 8px;
-            margin-bottom: 16px;
-            font-size: 14px;
-        }
-        .info {
-            background: rgba(124,58,237,0.05);
-            border: 1px solid rgba(124,58,237,0.2);
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 24px;
-            font-size: 13px;
-            color: #9595ad;
-        }
-        .lock-icon { text-align: center; font-size: 48px; margin-bottom: 16px; }
-    </style>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Admin Login - Skillvance</title>
+ <link rel="icon" href="/assets/favicon.png" type="image/png">
+ <style>
+ * { margin: 0; padding: 0; box-sizing: border-box; }
+ body {
+ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+ background: linear-gradient(135deg, #06060a 0%, #0c0c14 100%);
+ color: #eeeef2;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ min-height: 100vh;
+ padding: 20px;
+ }
+ .login-container {
+ background: #0c0c14;
+ border: 1px solid rgba(124, 58, 237, 0.3);
+ border-radius: 20px;
+ padding: 40px;
+ max-width: 400px;
+ width: 100%;
+ box-shadow: 0 0 60px rgba(124, 58, 237, 0.1);
+ }
+ .logo { text-align: center; margin-bottom: 30px; }
+ .logo h1 { font-size: 24px; color: #7c3aed; margin-bottom: 8px; }
+ .logo p { color: #9595ad; font-size: 14px; }
+ h2 { margin-bottom: 24px; text-align: center; }
+ .form-group { margin-bottom: 16px; }
+ label { display: block; margin-bottom: 8px; font-weight: 600; }
+ input {
+ width: 100%;
+ padding: 12px;
+ background: #111119;
+ border: 1px solid rgba(255,255,255,0.06);
+ color: #eeeef2;
+ border-radius: 8px;
+ font-size: 16px;
+ }
+ input:focus { outline: none; border-color: #7c3aed; }
+ button {
+ width: 100%;
+ padding: 12px;
+ background: linear-gradient(135deg, #7c3aed, #06b6d4);
+ color: white;
+ border: none;
+ border-radius: 8px;
+ cursor: pointer;
+ font-weight: 600;
+ font-size: 16px;
+ margin-top: 8px;
+ }
+ button:hover { opacity: 0.9; }
+ .error {
+ color: #ef4444;
+ padding: 12px;
+ background: rgba(239,68,68,0.1);
+ border-radius: 8px;
+ margin-bottom: 16px;
+ font-size: 14px;
+ }
+ .info {
+ background: rgba(124,58,237,0.05);
+ border: 1px solid rgba(124,58,237,0.2);
+ border-radius: 8px;
+ padding: 12px;
+ margin-top: 24px;
+ font-size: 13px;
+ color: #9595ad;
+ }
+ .lock-icon { text-align: center; font-size: 48px; margin-bottom: 16px; }
+ </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="logo">
-            <div class="lock-icon">🔒</div>
-            <h1>SKILLVANCE</h1>
-            <p>Admin Certificate Manager</p>
-        </div>
+ <div class="login-container">
+ <div class="logo">
+ <div class="lock-icon"></div>
+ <h1>SKILLVANCE</h1>
+ <p>Admin Certificate Manager</p>
+ </div>
 
-        <h2>Login</h2>
+ <h2>Login</h2>
 
-        <div id="errorMsg"></div>
+ <div id="errorMsg"></div>
 
-        <div class="form-group">
-            <label>Username</label>
-            <input type="text" id="username" placeholder="admin" autofocus>
-        </div>
+ <div class="form-group">
+ <label>Username</label>
+ <input type="text" id="username" placeholder="admin" autofocus>
+ </div>
 
-        <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="password" placeholder="Enter password">
-        </div>
+ <div class="form-group">
+ <label>Password</label>
+ <input type="password" id="password" placeholder="Enter password">
+ </div>
 
-        <button onclick="login()">Login to Admin Panel</button>
-    </div>
+ <button onclick="login()">Login to Admin Panel</button>
+ </div>
 
-    <script>
-        function resolveApiBaseUrl() {
-            const host = window.location.hostname;
-            const isLocalHost = host === 'localhost' || host === '127.0.0.1';
-            const isFileProtocol = window.location.protocol === 'file:';
+ <script>
+ function resolveApiBaseUrl() {
+ const host = window.location.hostname;
+ const isLocalHost = host === 'localhost' || host === '127.0.0.1';
+ const isFileProtocol = window.location.protocol === 'file:';
 
-            if (isFileProtocol || (isLocalHost && window.location.port !== '5000')) {
-                return 'http://localhost:5000/api';
-            }
+ if (isFileProtocol || (isLocalHost && window.location.port !== '5000')) {
+ return 'http://localhost:5000/api';
+ }
 
-            return '/api';
-        }
+ return '/api';
+ }
 
-        const API_BASE_URL = resolveApiBaseUrl();
+ const API_BASE_URL = resolveApiBaseUrl();
 
-        async function safeJson(response) {
-            const contentType = response.headers.get('content-type') || '';
-            if (!contentType.includes('application/json')) {
-                return null;
-            }
+ async function safeJson(response) {
+ const contentType = response.headers.get('content-type') || '';
+ if (!contentType.includes('application/json')) {
+ return null;
+ }
 
-            try {
-                return await response.json();
-            } catch (_error) {
-                return null;
-            }
-        }
+ try {
+ return await response.json();
+ } catch (_error) {
+ return null;
+ }
+ }
 
-        async function isSessionValid() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/auth/verify`, {
-                    credentials: 'include'
-                });
-                return response.ok;
-            } catch (_error) {
-                return false;
-            }
-        }
+ async function isSessionValid() {
+ try {
+ const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+ credentials: 'include'
+ });
+ return response.ok;
+ } catch (_error) {
+ return false;
+ }
+ }
 
-        async function login() {
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value.trim();
-            const errorMsg = document.getElementById('errorMsg');
+ async function login() {
+ const username = document.getElementById('username').value.trim();
+ const password = document.getElementById('password').value.trim();
+ const errorMsg = document.getElementById('errorMsg');
 
-            errorMsg.innerHTML = '';
+ errorMsg.innerHTML = '';
 
-            if (!username || !password) {
-                errorMsg.innerHTML = '<div class="error">Please enter username and password.</div>';
-                return;
-            }
+ if (!username || !password) {
+ errorMsg.innerHTML = '<div class="error">Please enter username and password.</div>';
+ return;
+ }
 
-            try {
-                const response = await fetch(`${API_BASE_URL}/auth/login`, {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ username, password })
-                });
+ try {
+ const response = await fetch(`${API_BASE_URL}/auth/login`, {
+ method: 'POST',
+ credentials: 'include',
+ headers: {
+ 'Content-Type': 'application/json'
+ },
+ body: JSON.stringify({ username, password })
+ });
 
-                const data = await safeJson(response);
-                if (!response.ok) {
-                    errorMsg.innerHTML = `<div class="error">${data?.message || 'Invalid username or password.'}</div>`;
-                    return;
-                }
-                window.location.href = '/admin-certs';
-            } catch (_error) {
-                errorMsg.innerHTML = '<div class="error">Login service is unavailable right now.</div>';
-            }
-        }
+ const data = await safeJson(response);
+ if (!response.ok) {
+ errorMsg.innerHTML = `<div class="error">${data?.message || 'Invalid username or password.'}</div>`;
+ return;
+ }
+ window.location.href = '/admin-certs';
+ } catch (_error) {
+ errorMsg.innerHTML = '<div class="error">Login service is unavailable right now.</div>';
+ }
+ }
 
-        isSessionValid().then(valid => {
-            if (valid) {
-                window.location.href = '/admin-certs';
-            }
-        });
+ isSessionValid().then(valid => {
+ if (valid) {
+ window.location.href = '/admin-certs';
+ }
+ });
 
-        document.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                login();
-            }
-        });
-    </script>
+ document.addEventListener('keypress', function (e) {
+ if (e.key === 'Enter') {
+ login();
+ }
+ });
+ </script>
 </body>
 </html>
