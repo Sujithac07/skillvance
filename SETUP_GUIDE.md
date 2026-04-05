@@ -37,11 +37,11 @@
 **Where:** `/admin.html` (redirects to login)
 **Protected:** Yes - Login required!
 
-**Default Credentials:**
-- Username: `admin`
-- Password: `skillvance123`
+**Credentials source:** backend `.env`
+- Username: `ADMIN_USERNAME`
+- Password: `ADMIN_PASSWORD`
 
-⚠️ **CHANGE THESE IMMEDIATELY!** Edit `admin-login.html` line 95-96
+⚠️ Use strong non-default credentials in backend `.env`.
 
 **What you do:**
 1. Go to `/admin.html`
@@ -184,29 +184,12 @@ Shows "VERIFIED" or "NOT FOUND"
 
 ## 🔐 ADMIN PANEL SECURITY
 
-### Default Credentials:
-- Username: `admin`
-- Password: `skillvance123`
+### Credential Management
 
-⚠️ **CHANGE IMMEDIATELY!**
-
-### How to Change Password:
-
-1. Open `admin-login.html` in text editor
-2. Find line 95-96:
-```javascript
-const validUsername = 'admin';
-const validPassword = 'skillvance123';
-```
-
-3. Change to your own:
-```javascript
-const validUsername = 'myUsername';
-const validPassword = 'mySecurePassword123';
-```
-
-4. Save file
-5. Login with new credentials ✅
+1. Open backend `.env`.
+2. Set secure values for `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `JWT_SECRET`.
+3. Restart backend after changes.
+4. Login uses `POST /api/auth/login` and returns JWT.
 
 ### Security Tips:
 - ✅ Login required (encrypted in browser)

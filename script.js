@@ -174,6 +174,19 @@ function initPageTransitions() {
   document.body.appendChild(overlay);
 
   const staticAsset = /\.(css|js|png|jpe?g|gif|webp|ico|svg|woff2?|ttf|map|json)(\?|$)/i;
+  const prefetched = new Set();
+
+  function prefetchPage(href) {
+    if (!href || prefetched.has(href)) return;
+    prefetched.add(href);
+
+    const link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.as = 'document';
+    link.href = href;
+    document.head.appendChild(link);
+  }
+
   document.querySelectorAll('a[href]').forEach(link => {
     const href = link.getAttribute('href');
     if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto') || href.startsWith('tel')) return;
@@ -182,13 +195,37 @@ function initPageTransitions() {
       href.endsWith('.html') ||
       (href.startsWith('/') && pathOnly !== '' && !staticAsset.test(pathOnly));
     if (isPage) {
+      link.addEventListener('pointerenter', () => prefetchPage(href), { passive: true });
+      link.addEventListener('focus', () => prefetchPage(href));
       link.addEventListener('click', e => {
         e.preventDefault();
         overlay.classList.add('active');
-        setTimeout(() => { window.location.href = href; }, 500);
+        requestAnimationFrame(() => {
+          setTimeout(() => { window.location.href = href; }, 60);
+        });
       });
     }
   });
+
+  const idlePrefetch = () => {
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto') || href.startsWith('tel')) return;
+      const pathOnly = href.split('#')[0].split('?')[0];
+      const isPage =
+        href.endsWith('.html') ||
+        (href.startsWith('/') && pathOnly !== '' && !staticAsset.test(pathOnly));
+      if (isPage) {
+        prefetchPage(href);
+      }
+    });
+  };
+
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(idlePrefetch, { timeout: 1000 });
+  } else {
+    setTimeout(idlePrefetch, 250);
+  }
 }
 
 // ===== MAGNETIC BUTTONS =====

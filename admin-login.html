@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - Skillvance</title>
+    <link rel="icon" href="/assets/favicon.png" type="image/png">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -100,31 +101,84 @@
     </div>
 
     <script>
-        // Check if already logged in
-        if (localStorage.getItem('adminLoggedIn') === 'true') {
-            window.location.href = '/admin-certs';
+        function resolveApiBaseUrl() {
+            const host = window.location.hostname;
+            const isLocalHost = host === 'localhost' || host === '127.0.0.1';
+            const isFileProtocol = window.location.protocol === 'file:';
+
+            if (isFileProtocol || (isLocalHost && window.location.port !== '5000')) {
+                return 'http://localhost:5000/api';
+            }
+
+            return '/api';
         }
 
-        function login() {
+        const API_BASE_URL = resolveApiBaseUrl();
+
+        async function safeJson(response) {
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                return null;
+            }
+
+            try {
+                return await response.json();
+            } catch (_error) {
+                return null;
+            }
+        }
+
+        async function isSessionValid() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+                    credentials: 'include'
+                });
+                return response.ok;
+            } catch (_error) {
+                return false;
+            }
+        }
+
+        async function login() {
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value.trim();
             const errorMsg = document.getElementById('errorMsg');
 
-// Simple authentication (you can change these)
-const validUsername = 'admin@skillvance';
-const validPassword = 'Acs@2004';
+            errorMsg.innerHTML = '';
 
-            if (username === validUsername && password === validPassword) {
-                localStorage.setItem('adminLoggedIn', 'true');
-                localStorage.setItem('adminLoginTime', new Date().getTime());
+            if (!username || !password) {
+                errorMsg.innerHTML = '<div class="error">Please enter username and password.</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await safeJson(response);
+                if (!response.ok) {
+                    errorMsg.innerHTML = `<div class="error">${data?.message || 'Invalid username or password.'}</div>`;
+                    return;
+                }
                 window.location.href = '/admin-certs';
-            } else {
-                errorMsg.innerHTML = '<div class="error">❌ Invalid username or password</div>';
+            } catch (_error) {
+                errorMsg.innerHTML = '<div class="error">Login service is unavailable right now.</div>';
             }
         }
 
-        // Enter key to login
-        document.addEventListener('keypress', function(e) {
+        isSessionValid().then(valid => {
+            if (valid) {
+                window.location.href = '/admin-certs';
+            }
+        });
+
+        document.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 login();
             }

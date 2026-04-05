@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Certificate Manager</title>
+    <link rel="icon" href="/assets/favicon.png" type="image/png">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #06060a; color: #eeeef2; padding: 20px; }
@@ -59,8 +60,16 @@
                 </select>
             </div>
             <div class="form-group">
-                <label>Completion Date (YYYY-MM-DD)</label>
+                <label>Email</label>
+                <input type="email" id="certEmail" placeholder="student@example.com">
+            </div>
+            <div class="form-group">
+                <label>Issue Date (YYYY-MM-DD)</label>
                 <input type="date" id="certDate">
+            </div>
+            <div class="form-group">
+                <label>Marks Scored (0-100)</label>
+                <input type="number" id="certScore" min="0" max="100" step="1" placeholder="95">
             </div>
             <div class="form-group">
                 <label>Mentor Name</label>
@@ -78,7 +87,8 @@
                         <th>Certificate ID</th>
                         <th>Student Name</th>
                         <th>Domain</th>
-                        <th>Completion Date</th>
+                        <th>Issue Date</th>
+                        <th>Score</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -108,36 +118,80 @@
         </div>
     </div>
 
-    <script src="certificates.js"></script>
     <script>
-        // CHECK IF LOGGED IN - REDIRECT TO LOGIN IF NOT
-        if (localStorage.getItem('adminLoggedIn') !== 'true') {
+        function resolveApiBaseUrl() {
+            const host = window.location.hostname;
+            const isLocalHost = host === 'localhost' || host === '127.0.0.1';
+            const isFileProtocol = window.location.protocol === 'file:';
+
+            if (isFileProtocol || (isLocalHost && window.location.port !== '5000')) {
+                return 'http://localhost:5000/api';
+            }
+
+            return '/api';
+        }
+
+        const API_BASE_URL = resolveApiBaseUrl();
+
+        async function safeJson(response) {
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                return null;
+            }
+
+            try {
+                return await response.json();
+            } catch (_error) {
+                return null;
+            }
+        }
+
+        async function apiRequest(path, options = {}) {
+            const hasBody = options.body !== undefined;
+            const response = await fetch(`${API_BASE_URL}${path}`, {
+                ...options,
+                credentials: 'include',
+                headers: {
+                    ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+                    ...(options.headers || {})
+                }
+            });
+
+            const data = await safeJson(response);
+            if (!response.ok) {
+                const message = data?.message || 'Request failed.';
+                throw new Error(message);
+            }
+
+            return data;
+        }
+
+        async function ensureSession() {
+            try {
+                await apiRequest('/auth/verify', { method: 'GET' });
+                return true;
+            } catch (_error) {
+                window.location.href = '/admin-login';
+                return false;
+            }
+        }
+
+        async function logout() {
+            try {
+                await apiRequest('/auth/logout', { method: 'POST' });
+            } catch (_error) {
+                // Session may already be invalid.
+            }
             window.location.href = '/admin-login';
         }
 
-        function logout() {
-            localStorage.removeItem('adminLoggedIn');
-            localStorage.removeItem('adminLoginTime');
-            window.location.href = '/admin-login';
-        }
-
-        // Load from localStorage
-        function loadCertificates() {
-            const saved = localStorage.getItem('skillvanceCerts');
-            return saved ? JSON.parse(saved) : [...certificatesDB];
-        }
-
-        function saveCertificates(certs) {
-            localStorage.setItem('skillvanceCerts', JSON.stringify(certs));
-            updateTable();
-            updateExport();
-        }
-
-        function addCertificate() {
+        async function addCertificate() {
             const id = document.getElementById('certId').value.trim().toUpperCase();
             const name = document.getElementById('certName').value.trim();
             const domain = document.getElementById('certDomain').value;
+            const email = document.getElementById('certEmail').value.trim();
             const date = document.getElementById('certDate').value;
+            const score = document.getElementById('certScore').value;
             const mentor = document.getElementById('mentorName').value.trim();
             const msg = document.getElementById('message');
 
@@ -146,47 +200,81 @@
                 return;
             }
 
-            const certs = loadCertificates();
-            if (certs.some(c => c.id === id)) {
-                msg.innerHTML = '<div class="error">❌ Certificate ID already exists</div>';
-                return;
+            try {
+                await apiRequest('/certificates', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        id,
+                        name,
+                        domain,
+                        email,
+                        issueDate: date,
+                        score,
+                        mentorName: mentor
+                    })
+                });
+
+                msg.innerHTML = '<div class="success">✅ Certificate added successfully!</div>';
+                document.getElementById('certId').value = '';
+                document.getElementById('certName').value = '';
+                document.getElementById('certEmail').value = '';
+                document.getElementById('certDate').value = '';
+                document.getElementById('certScore').value = '';
+                document.getElementById('mentorName').value = '';
+                await updateTable();
+                await updateExport();
+            } catch (error) {
+                msg.innerHTML = `<div class="error">❌ ${error.message}</div>`;
             }
-
-            certs.push({ id, name, domain, completionDate: date, mentorName: mentor, verified: true });
-            saveCertificates(certs);
-
-            msg.innerHTML = '<div class="success">✅ Certificate added successfully!</div>';
-            document.getElementById('certId').value = '';
-            document.getElementById('certName').value = '';
-            document.getElementById('certDate').value = '';
-            document.getElementById('mentorName').value = '';
         }
 
-        function deleteCertificate(id) {
+        async function deleteCertificate(id) {
             if (confirm('Delete this certificate?')) {
-                let certs = loadCertificates();
-                certs = certs.filter(c => c.id !== id);
-                saveCertificates(certs);
+                try {
+                    await apiRequest(`/certificates/${encodeURIComponent(id)}`, {
+                        method: 'DELETE'
+                    });
+                    await updateTable();
+                    await updateExport();
+                } catch (error) {
+                    document.getElementById('message').innerHTML = `<div class="error">❌ ${error.message}</div>`;
+                }
             }
         }
 
-        function updateTable() {
-            const certs = loadCertificates();
+        async function fetchCertificates() {
+            const data = await apiRequest('/certificates?limit=200', { method: 'GET' });
+            return data.certificates || [];
+        }
+
+        async function updateTable() {
+            const certs = await fetchCertificates();
             const tbody = document.getElementById('certTableBody');
             tbody.innerHTML = certs.map(c => `
                 <tr>
                     <td>${c.id}</td>
                     <td>${c.name}</td>
                     <td>${c.domain}</td>
-                    <td>${c.completionDate}</td>
+                    <td>${new Date(c.issueDate || c.completionDate).toISOString().slice(0, 10)}</td>
+                    <td>${Number.isFinite(Number(c.score)) ? Number(c.score) : '-'}</td>
                     <td><button class="delete-btn" onclick="deleteCertificate('${c.id}')">Delete</button></td>
                 </tr>
             `).join('');
         }
 
-        function updateExport() {
-            const certs = loadCertificates();
-            const code = `const certificatesDB = ${JSON.stringify(certs, null, 4)};`;
+        async function updateExport() {
+            const certs = await fetchCertificates();
+            const normalized = certs.map(c => ({
+                id: c.id,
+                name: c.name,
+                domain: c.domain,
+                email: c.email || '',
+                issueDate: new Date(c.issueDate || c.completionDate).toISOString().slice(0, 10),
+                score: Number.isFinite(Number(c.score)) ? Number(c.score) : null,
+                mentorName: c.mentorName,
+                verified: Boolean(c.verified)
+            }));
+            const code = `const certificatesDB = ${JSON.stringify(normalized, null, 4)};`;
             document.getElementById('exportCode').value = code;
         }
 
@@ -197,9 +285,19 @@
             alert('✅ Copied! Update certificates.js with this code');
         }
 
-        function downloadAsFile() {
-            const certs = loadCertificates();
-            const code = `const certificatesDB = ${JSON.stringify(certs, null, 4)};\n\n// Add this to your certificates.js file`;
+        async function downloadAsFile() {
+            const certs = await fetchCertificates();
+            const normalized = certs.map(c => ({
+                id: c.id,
+                name: c.name,
+                domain: c.domain,
+                email: c.email || '',
+                issueDate: new Date(c.issueDate || c.completionDate).toISOString().slice(0, 10),
+                score: Number.isFinite(Number(c.score)) ? Number(c.score) : null,
+                mentorName: c.mentorName,
+                verified: Boolean(c.verified)
+            }));
+            const code = `const certificatesDB = ${JSON.stringify(normalized, null, 4)};\n\n// Add this to your certificates.js file`;
             const blob = new Blob([code], { type: 'text/javascript' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -208,9 +306,15 @@
             a.click();
         }
 
-        // Initialize
-        updateTable();
-        updateExport();
+        (async function init() {
+            const ok = await ensureSession();
+            if (!ok) {
+                return;
+            }
+
+            await updateTable();
+            await updateExport();
+        })();
     </script>
 </body>
 </html>

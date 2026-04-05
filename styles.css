@@ -457,12 +457,31 @@ body::before {
     z-index: 99999;
     transform: scaleY(0);
     transform-origin: top;
-    transition: transform 0.5s var(--ease-out);
+    transition: transform 0.18s var(--ease-out);
+    will-change: transform;
 }
 
 .page-transition.active {
     transform: scaleY(1);
     transform-origin: bottom;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    .page-transition,
+    .reveal,
+    .reveal-left,
+    .reveal-right,
+    .reveal-scale,
+    .navbar,
+    .top-banner {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
 }
 
 /* --- Top Banner --- */
