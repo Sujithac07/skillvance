@@ -1021,6 +1021,7 @@ body::before {
  gap: 52px;
  animation: ticker 25s linear infinite;
  width: max-content;
+ will-change: transform;
 }
 
 .ticker-item {
@@ -1031,6 +1032,10 @@ body::before {
  display: flex;
  align-items: center;
  gap: 8px;
+}
+
+.ticker-wrap {
+ -webkit-overflow-scrolling: touch;
 }
 
 .ticker-item .sep {
@@ -2320,9 +2325,26 @@ body::before {
  padding: 80px 0;
  }
 
+ .container,
+ .hero-content,
+ .footer .container {
+ padding-left: 20px;
+ padding-right: 20px;
+ }
+
  html,
  body {
  scroll-behavior: smooth;
+ }
+
+ body {
+ font-size: 16px;
+ line-height: 1.65;
+ padding-bottom: 80px;
+ }
+
+ p {
+ font-size: 15px;
  }
 
  body::before {
@@ -2347,11 +2369,22 @@ body::before {
  justify-content: center;
  gap: 32px;
  z-index: 999;
+ padding: 80px 24px 24px;
  }
 
  .nav-links a {
+ width: 100%;
  font-size: 1.1rem;
+ padding: 14px 0;
+ text-align: left;
+ border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
  letter-spacing: 0.3px;
+ }
+
+ .nav-links .nav-cta {
+ margin-top: 10px;
+ text-align: center;
+ border-bottom: none;
  }
 
  .nav-links.open {
@@ -2360,6 +2393,27 @@ body::before {
 
  .hamburger {
  display: flex;
+ }
+
+ .top-banner {
+ font-size: 12px;
+ line-height: 1.4;
+ padding: 8px 48px 8px 12px;
+ white-space: nowrap;
+ overflow: hidden;
+ text-overflow: ellipsis;
+ }
+
+ .top-banner .close-banner {
+ top: 0;
+ right: 0;
+ width: 44px;
+ height: 44px;
+ transform: none;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ font-size: 18px;
  }
 
  .about-grid,
@@ -2373,6 +2427,24 @@ body::before {
  .programs-grid,
  .features-grid {
  grid-template-columns: 1fr 1fr;
+ }
+
+ .features-grid {
+ grid-template-columns: 1fr;
+ }
+
+ .feature-card {
+ padding: 20px;
+ }
+
+ .feature-card h3 {
+ font-size: 16px;
+ margin-bottom: 8px;
+ }
+
+ .feature-card p {
+ font-size: 14px;
+ line-height: 1.6;
  }
 
  .domains-grid {
@@ -2422,20 +2494,58 @@ body::before {
 
  .hero-buttons {
  flex-direction: column;
+ align-items: stretch;
+ gap: 12px;
+ width: 100%;
  }
 
  .hero-buttons .btn-primary,
  .hero-buttons .btn-secondary {
  width: 100%;
  justify-content: center;
+ text-align: center;
+ padding: 14px 24px;
+ font-size: 16px;
+ border-radius: 8px;
  }
 
  .hero-stats {
- justify-content: center;
+ display: grid;
+ grid-template-columns: 1fr 1fr;
+ gap: 10px;
+ width: 100%;
+ }
+
+ .hero-stat {
+ padding: 12px;
+ border-radius: 8px;
+ background: rgba(255, 255, 255, 0.07);
+ }
+
+ .hero-stat .num {
+ font-size: 20px;
+ }
+
+ .hero-stat .label {
+ font-size: 11px;
+ margin-top: 2px;
  }
 
  .footer-grid {
  grid-template-columns: 1fr;
+ gap: 28px;
+ }
+
+ .footer h4 {
+ font-size: 14px;
+ margin-bottom: 12px;
+ }
+
+ .footer ul a {
+ display: block;
+ font-size: 14px;
+ padding: 10px 0;
+ border-bottom: 0.5px solid rgba(255, 255, 255, 0.07);
  }
 
  .comparison-controls {
@@ -2483,6 +2593,21 @@ body::before {
  .seat-card:active,
  .contact-info-card:active {
  transform: scale(0.985);
+ opacity: 0.92;
+ }
+
+ .btn-primary:active,
+ .btn-secondary:active,
+ .nav-cta:active {
+ transform: scale(0.97);
+ }
+
+ .whatsapp-fab {
+ bottom: 20px;
+ right: 16px;
+ width: 52px;
+ height: 52px;
+ z-index: 800;
  }
 }
 
@@ -2508,7 +2633,7 @@ body::before {
  }
 
  .hero-stats {
- gap: 24px;
+ grid-template-columns: 1fr;
  }
 
  .glass-card,
