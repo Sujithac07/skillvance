@@ -17,7 +17,10 @@ async function connectDB() {
  cachedConnection = await mongoose.connect(mongoUri, {
  dbName,
  maxPoolSize: 10,
- serverSelectionTimeoutMS: 10000
+ keepAlive: true,
+ keepAliveInitialDelay: 300000,
+ serverSelectionTimeoutMS: 5000,
+ connectTimeoutMS: 10000
  });
 
  console.log(`MongoDB connected: ${cachedConnection.connection.name}`);

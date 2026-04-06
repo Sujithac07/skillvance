@@ -2,9 +2,7 @@ const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 
 function getBcryptRounds() {
- const rawRounds = Number(process.env.BCRYPT_ROUNDS || 12);
- const rounds = Number.isFinite(rawRounds) ? Math.trunc(rawRounds) : 12;
- return Math.min(Math.max(rounds, 10), 14);
+ return 12;
 }
 
 const adminSchema = new mongoose.Schema(
@@ -61,5 +59,8 @@ adminSchema.methods.needsPasswordRehash = function needsPasswordRehash() {
  return false;
  }
 };
+
+// Explicit index for login lookups.
+adminSchema.index({ username: 1 });
 
 module.exports = mongoose.models.Admin || mongoose.model('Admin', adminSchema);

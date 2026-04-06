@@ -752,7 +752,7 @@
  cancelEdit();
  }
 
- await refreshData();
+ await loadCertificates();
  } catch (error) {
  showBanner('error', error.message);
  }
@@ -770,7 +770,7 @@
  cancelEdit();
  }
  showBanner('success', `Certificate ${id} deleted.`);
- await refreshData();
+ await loadCertificates();
  } catch (error) {
  showBanner('error', error.message);
  }
@@ -856,7 +856,10 @@
  `).join('');
  }
 
- async function refreshData() {
+ async function loadCertificates() {
+ const tbody = document.getElementById('certTableBody');
+ tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#b5c0df">Refreshing...</td></tr>';
+
  const certificates = await fetchCertificates();
  certificateCache = certificates;
  renderStats(certificates);
@@ -959,7 +962,7 @@
 
  showBanner('success', response.message || 'Backup imported successfully.');
  cancelEdit();
- await refreshData();
+ await loadCertificates();
  } catch (error) {
  showBanner('error', error.message);
  }
@@ -994,7 +997,7 @@
  return;
  }
 
- await refreshData();
+ await loadCertificates();
  })();
  </script>
 </body>

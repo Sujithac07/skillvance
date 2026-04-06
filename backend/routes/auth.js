@@ -47,7 +47,7 @@ router.post('/login', loginLimiter, async (req, res, next) => {
  return res.status(400).json({ message: 'Username and password are required.' });
  }
 
- const admin = await Admin.findOne({ username }).select('+password');
+ const admin = await Admin.findOne({ username }).select('password username email role');
  if (!admin) {
  await bcrypt.compare(password, FALLBACK_PASSWORD_HASH);
  return res.status(401).json({ message: 'Invalid username or password.' });
