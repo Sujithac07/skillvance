@@ -152,13 +152,16 @@ router.get('/', verifyToken, isAdmin, async (req, res, next) => {
  const rawLimit = Number(req.query.limit || 100);
  const limit = Math.min(Math.max(rawLimit, 1), 1000);
 
+ console.log(`[DEBUG] Fetching certificates with limit=${limit}`);
  const certificates = await Certificate.find({})
  .sort({ createdAt: -1 })
  .limit(limit)
  .lean();
 
+ console.log(`[DEBUG] Found ${certificates.length} certificates`);
  return res.json({ certificates });
  } catch (error) {
+ console.error('[ERROR] Certificate fetch failed:', error);
  return next(error);
  }
 });

@@ -668,6 +668,7 @@
 
  async function apiRequest(path, options = {}) {
  const hasBody = options.body !== undefined;
+ try {
  const response = await fetch(`${API_BASE_URL}${path}`, {
  ...options,
  credentials: 'include',
@@ -679,11 +680,16 @@
 
  const data = await safeJson(response);
  if (!response.ok) {
- const message = data?.message || 'Request failed.';
+ const message = data?.message || `Request failed with status ${response.status}`;
+ console.error(`[API ERROR] ${options.method || 'GET'} ${path}: ${message}`);
  throw new Error(message);
  }
 
  return data;
+ } catch (error) {
+ console.error(`[API FAILED] ${options.method || 'GET'} ${path}:`, error);
+ throw error;
+ }
  }
 
  async function ensureSession() {
@@ -777,8 +783,21 @@
  }
 
  async function fetchCertificates() {
+ try {
  const data = await apiRequest('/certificates?limit=1000', { method: 'GET' });
- return data.certificates || [];
+ if (!data) {
+ console.error('Empty response from API');
+ throw new Error('Empty response from certificate API');
+ }
+ if (!Array.isArray(data.certificates)) {
+ console.error('Invalid certificate response format:', data);
+ throw new Error('Invalid certificate data format from server');
+ }
+ return data.certificates;
+ } catch (error) {
+ console.error('Certificate fetch error:', error);
+ throw error;
+ }
  }
 
  function startEdit(certificateId) {
@@ -860,6 +879,7 @@
  const tbody = document.getElementById('certTableBody');
  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#b5c0df">Refreshing...</td></tr>';
 
+ try {
  const certificates = await fetchCertificates();
  certificateCache = certificates;
  renderStats(certificates);
@@ -868,6 +888,11 @@
 
  const payload = buildBackupPayload(certificates);
  exportBackupText = JSON.stringify(payload, null, 4);
+ } catch (error) {
+ console.error('Failed to load certificates:', error);
+ tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#ef4444">Error: ${String(error.message || error)}</td></tr>`;
+ showBanner('error', `Failed to load certificates: ${String(error.message || error)}`);
+ }
  }
 
  function copyToClipboard() {
