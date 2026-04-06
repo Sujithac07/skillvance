@@ -44,20 +44,26 @@ router.post('/login', loginLimiter, async (req, res, next) => {
  const password = String(req.body?.password || '');
 
  if (!username || !password || password.length > 256) {
+ console.log(`[AUTH] Login attempt - missing credentials`);
  return res.status(400).json({ message: 'Username and password are required.' });
  }
 
+ console.log(`[AUTH] Login attempt - username: ${username}`);
  const admin = await Admin.findOne({ username }).select('password username email role');
  if (!admin) {
+ console.log(`[AUTH] Login failed - user not found: ${username}`);
  await bcrypt.compare(password, FALLBACK_PASSWORD_HASH);
  return res.status(401).json({ message: 'Invalid username or password.' });
  }
 
+ console.log(`[AUTH] User found: ${username}, checking password`);
  const isValidPassword = await admin.comparePassword(password);
  if (!isValidPassword) {
+ console.log(`[AUTH] Login failed - invalid password for: ${username}`);
  return res.status(401).json({ message: 'Invalid username or password.' });
  }
 
+ console.log(`[AUTH] Password valid for ${username}, generating token`);
  if (typeof admin.needsPasswordRehash === 'function' && admin.needsPasswordRehash()) {
  admin.password = password;
  await admin.save();
@@ -78,6 +84,7 @@ router.post('/login', loginLimiter, async (req, res, next) => {
  }
  );
 
+ console.log(`[AUTH] Login successful for ${username}, setting cookie`);
  res.cookie(getAuthCookieName(), token, buildAuthCookieOptions());
 
  return res.json({
@@ -90,6 +97,7 @@ router.post('/login', loginLimiter, async (req, res, next) => {
  }
  });
  } catch (error) {
+ console.error(`[AUTH] Login error:`, error);
  return next(error);
  }
 });

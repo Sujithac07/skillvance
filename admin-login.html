@@ -152,6 +152,7 @@
  }
 
  try {
+ console.log('[LOGIN] Attempting login for:', username);
  const response = await fetch(`${API_BASE_URL}/auth/login`, {
  method: 'POST',
  credentials: 'include',
@@ -161,14 +162,22 @@
  body: JSON.stringify({ username, password })
  });
 
+ console.log('[LOGIN] Response status:', response.status);
  const data = await safeJson(response);
+ console.log('[LOGIN] Response data:', data);
+ 
  if (!response.ok) {
- errorMsg.innerHTML = `<div class="error">${data?.message || 'Invalid username or password.'}</div>`;
+ const message = data?.message || `Login failed (${response.status})`;
+ console.error('[LOGIN] Error:', message);
+ errorMsg.innerHTML = `<div class="error">${message}</div>`;
  return;
  }
+ 
+ console.log('[LOGIN] Success - redirecting to admin panel');
  window.location.href = '/admin-certs';
- } catch (_error) {
- errorMsg.innerHTML = '<div class="error">Login service is unavailable right now.</div>';
+ } catch (error) {
+ console.error('[LOGIN] Network error:', error);
+ errorMsg.innerHTML = `<div class="error">Login service unavailable: ${String(error.message || error)}</div>`;
  }
  }
 
