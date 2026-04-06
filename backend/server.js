@@ -170,6 +170,8 @@ function ensureInitialized() {
  return initializationPromise;
 }
 
+const startupInitializationPromise = ensureInitialized();
+
 const allowedOrigins = getAllowedOrigins();
 
 const apiLimiterWindowMs = Number(process.env.API_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000);
@@ -208,7 +210,7 @@ app.use('/api', apiLimiter);
 
 app.use(async (req, res, next) => {
  try {
- await ensureInitialized();
+ await startupInitializationPromise;
  return next();
  } catch (error) {
  return next(error);
@@ -227,13 +229,21 @@ app.use((req, res) => {
 });
 
 app.use((err, _req, res, _next) => {
- const status = err.status || 500;
- const message =
- err.name === 'ValidationError'
- ? err.message
- : status >= 500
- ? 'Internal server error.'
- : err.message;
+ // Preserve authentication/authorization status codes
+ const status = err.status || err.statusCode || 500;
+ 
+ // Never expose sensitive internal error details
+ let message = 'Internal server error.';
+ 
+ if (status === 401) {
+ message = err.message || 'Authentication required.';
+ } else if (status === 403) {
+ message = err.message || 'Access forbidden.';
+ } else if (status >= 400 && status < 500) {
+ message = err.message || 'Request error.';
+ } else if (err.name === 'ValidationError') {
+ message = err.message;
+ }
 
  res.status(status).json({ message });
 });
@@ -243,7 +253,7 @@ module.exports.ensureInitialized = ensureInitialized;
 
 if (require.main === module && !process.env.VERCEL) {
  const port = Number(process.env.PORT || 5000);
- ensureInitialized()
+ startupInitializationPromise
  .then(() => {
  app.listen(port, () => {
  console.log(`Skillvance backend running on port ${port}`);

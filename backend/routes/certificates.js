@@ -140,6 +140,15 @@ router.get('/verify/:id', verifyLimiter, async (req, res, next) => {
 
 router.get('/', verifyToken, isAdmin, async (req, res, next) => {
  try {
+ // Double-check authentication - should not reach here without valid auth
+ if (!req.user) {
+ return res.status(401).json({ message: 'Authentication required.' });
+ }
+
+ if (req.user.role !== 'admin') {
+ return res.status(403).json({ message: 'Admin access required.' });
+ }
+
  const rawLimit = Number(req.query.limit || 100);
  const limit = Math.min(Math.max(rawLimit, 1), 1000);
 
