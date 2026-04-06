@@ -6,68 +6,382 @@
  <title>Admin - Certificate Manager</title>
  <link rel="icon" href="/assets/favicon.png" type="image/png">
  <style>
+ @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+ :root {
+ --bg-main: #060917;
+ --bg-card: #10162a;
+ --bg-card-soft: #131b34;
+ --text-main: #edf2ff;
+ --text-muted: #b5c0df;
+ --line: rgba(169, 183, 226, 0.16);
+ --accent: #7c3aed;
+ --accent-cyan: #06b6d4;
+ --ok: #22c55e;
+ --warn: #f59e0b;
+ --danger: #ef4444;
+ }
+
  * { margin: 0; padding: 0; box-sizing: border-box; }
- body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #06060a; color: #eeeef2; padding: 20px; }
- .container { max-width: 1000px; margin: 0 auto; }
- .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
- h1 { color: #7c3aed; }
- .logout-btn { padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
- .logout-btn:hover { opacity: 0.9; }
- .section { background: #0c0c14; border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 24px; margin-bottom: 24px; }
- .form-group { margin-bottom: 16px; }
- label { display: block; margin-bottom: 8px; font-weight: 600; }
- input, select, textarea { width: 100%; padding: 10px; background: #111119; border: 1px solid rgba(255,255,255,0.06); color: #eeeef2; border-radius: 8px; font-size: 14px; }
- input:focus, select:focus, textarea:focus { outline: none; border-color: #7c3aed; }
- button { padding: 12px 24px; background: linear-gradient(135deg, #7c3aed, #06b6d4); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
- button:hover { opacity: 0.9; }
- .success { color: #22c55e; padding: 12px; background: rgba(34,197,94,0.1); border-radius: 8px; margin-bottom: 16px; }
- .error { color: #ef4444; padding: 12px; background: rgba(239,68,68,0.1); border-radius: 8px; margin-bottom: 16px; }
- table { width: 100%; border-collapse: collapse; margin-top: 16px; }
- th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.06); }
- th { background: rgba(124,58,237,0.1); font-weight: 600; }
- .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); }
- .backup-table { width: 100%; min-width: 860px; border-collapse: collapse; margin-top: 0; }
- .backup-table th { white-space: nowrap; background: rgba(6,182,212,0.08); }
- .backup-table tbody tr:hover { background: rgba(255,255,255,0.03); }
- .backup-meta { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
- .backup-count { padding: 8px 12px; border-radius: 999px; background: rgba(124,58,237,0.12); color: #d8d8ff; font-size: 12px; }
- .section-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
- .action-group { display: flex; gap: 8px; flex-wrap: wrap; }
- .secondary-btn { background: rgba(255,255,255,0.08); }
- .danger-btn { background: #ef4444; }
- .delete-btn { padding: 6px 12px; font-size: 12px; }
- .edit-btn { padding: 6px 12px; font-size: 12px; background: rgba(6,182,212,0.18); }
- .status-note { margin-top: 8px; color: #9595ad; font-size: 12px; }
- textarea { font-family: monospace; }
- .row { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
- .inline-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
- .checkbox-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; color: #c9cade; }
- .checkbox-row input { width: auto; }
+ body {
+ font-family: 'DM Sans', sans-serif;
+ background: radial-gradient(circle at top right, #1a1f3f 0%, #090d1f 46%, #060917 100%);
+ color: var(--text-main);
+ }
+
+ .topbar {
+ position: sticky;
+ top: 0;
+ z-index: 20;
+ height: 56px;
+ padding: 0 14px;
+ background: rgba(6, 9, 23, 0.82);
+ backdrop-filter: blur(10px);
+ border-bottom: 1px solid var(--line);
+ display: flex;
+ align-items: center;
+ justify-content: space-between;
+ gap: 12px;
+ white-space: nowrap;
+ }
+
+ .brand {
+ display: flex;
+ align-items: center;
+ gap: 10px;
+ overflow: hidden;
+ min-width: 0;
+ }
+
+ .brand-dot {
+ width: 10px;
+ height: 10px;
+ border-radius: 999px;
+ background: linear-gradient(145deg, #8b5cf6, #06b6d4);
+ box-shadow: 0 0 14px rgba(124, 58, 237, 0.7);
+ flex-shrink: 0;
+ }
+
+ .brand-main { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+ .brand-sub { color: var(--text-muted); font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+
+ .logout-btn {
+ border: 1px solid rgba(239, 68, 68, 0.5);
+ background: rgba(239, 68, 68, 0.1);
+ color: #fecaca;
+ border-radius: 8px;
+ padding: 9px 14px;
+ font-weight: 600;
+ cursor: pointer;
+ min-height: 38px;
+ }
+
+ .logout-btn:hover { background: rgba(239, 68, 68, 0.2); }
+
+ .page {
+ max-width: 1280px;
+ margin: 16px auto 24px;
+ padding: 0 14px;
+ }
+
+ .banner {
+ display: none;
+ align-items: center;
+ justify-content: space-between;
+ gap: 10px;
+ padding: 12px 14px;
+ border-radius: 10px;
+ border: 1px solid transparent;
+ margin-bottom: 14px;
+ animation: bannerIn 0.28s ease;
+ }
+
+ .banner.visible { display: flex; }
+ .banner.error { background: rgba(239, 68, 68, 0.14); border-color: rgba(239, 68, 68, 0.45); color: #fecaca; }
+ .banner.success { background: rgba(34, 197, 94, 0.14); border-color: rgba(34, 197, 94, 0.45); color: #bbf7d0; }
+ .banner button { border: none; background: transparent; color: inherit; cursor: pointer; font-size: 18px; line-height: 1; }
+
+ @keyframes bannerIn {
+ from { opacity: 0; transform: translateY(-8px); }
+ to { opacity: 1; transform: translateY(0); }
+ }
+
+ .howto {
+ background: rgba(124, 58, 237, 0.08);
+ border: 1px solid rgba(124, 58, 237, 0.28);
+ border-radius: 14px;
+ padding: 14px 16px;
+ margin-bottom: 14px;
+ }
+
+ .howto summary { cursor: pointer; font-weight: 600; }
+ .howto ol { margin: 10px 0 0 20px; color: var(--text-muted); }
+ .howto li { margin-bottom: 6px; }
+
+ .layout {
+ display: grid;
+ gap: 14px;
+ grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+ }
+
+ .panel {
+ background: var(--bg-card);
+ border: 1px solid var(--line);
+ border-radius: 14px;
+ padding: 16px;
+ }
+
+ .panel h2 {
+ font-size: 1.06rem;
+ margin-bottom: 12px;
+ }
+
+ .form-grid {
+ display: grid;
+ gap: 12px;
+ }
+
+ .form-group label {
+ display: flex;
+ align-items: center;
+ gap: 6px;
+ margin-bottom: 6px;
+ font-weight: 600;
+ }
+
+ .required-dot {
+ display: inline-block;
+ width: 6px;
+ height: 6px;
+ border-radius: 999px;
+ background: #f87171;
+ }
+
+ .field-hint {
+ margin-top: 5px;
+ font-size: 12px;
+ color: var(--text-muted);
+ }
+
+ input, select, textarea {
+ width: 100%;
+ padding: 11px;
+ min-height: 44px;
+ border-radius: 10px;
+ border: 1px solid var(--line);
+ background: var(--bg-card-soft);
+ color: var(--text-main);
+ font-family: inherit;
+ }
+
+ input::placeholder, textarea::placeholder { color: #9aa5c9; }
+ input:focus, select:focus, textarea:focus {
+ outline: none;
+ border-color: var(--accent);
+ box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.22);
+ }
+
+ #certId {
+ font-family: 'DM Mono', monospace;
+ background: rgba(124, 58, 237, 0.12);
+ }
+
+ #certId:disabled {
+ opacity: 0.65;
+ cursor: not-allowed;
+ }
+
+ .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+ button {
+ border: none;
+ border-radius: 10px;
+ min-height: 44px;
+ padding: 0 16px;
+ font-weight: 600;
+ cursor: pointer;
+ color: #ffffff;
+ background: linear-gradient(140deg, #7c3aed, #0ea5e9);
+ }
+
+ .secondary-btn { background: rgba(148, 163, 184, 0.2); border: 1px solid rgba(148, 163, 184, 0.4); }
+ .danger-btn { background: rgba(239, 68, 68, 0.18); border: 1px solid rgba(239, 68, 68, 0.45); color: #fecaca; }
+ .export-btn { background: linear-gradient(145deg, #059669, #10b981); }
+
+ .stats {
+ display: grid;
+ gap: 10px;
+ grid-template-columns: repeat(3, minmax(0, 1fr));
+ margin-bottom: 14px;
+ }
+
+ .stat-card {
+ background: var(--bg-card);
+ border: 1px solid var(--line);
+ border-radius: 12px;
+ padding: 12px;
+ border-left: 4px solid transparent;
+ }
+
+ .stat-card .label { color: var(--text-muted); font-size: 12px; }
+ .stat-card .value { font-size: 1.35rem; font-weight: 700; margin-top: 4px; }
+ .stat-total { border-left-color: var(--accent); }
+ .stat-verified { border-left-color: var(--ok); }
+ .stat-issues { border-left-color: var(--warn); }
+
+ .section-head {
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ gap: 10px;
+ flex-wrap: wrap;
+ margin-bottom: 10px;
+ }
+
+ .table-wrap {
+ overflow: auto;
+ border: 1px solid var(--line);
+ border-radius: 12px;
+ }
+
+ table {
+ width: 100%;
+ border-collapse: collapse;
+ min-width: 880px;
+ }
+
+ th, td {
+ padding: 11px;
+ border-bottom: 1px solid var(--line);
+ text-align: left;
+ font-size: 14px;
+ }
+
+ th { color: #c7d2fe; background: rgba(124, 58, 237, 0.15); }
+ tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+ tbody tr.issue-row { border-left: 3px solid var(--warn); background: rgba(245, 158, 11, 0.08); }
+
+ .id-cell { font-family: 'DM Mono', monospace; font-size: 13px; }
+ .badge {
+ border-radius: 999px;
+ padding: 4px 9px;
+ font-size: 12px;
+ font-weight: 600;
+ display: inline-block;
+ }
+
+ .badge-ml { background: rgba(14, 165, 233, 0.18); color: #7dd3fc; }
+ .badge-ds { background: rgba(168, 85, 247, 0.18); color: #d8b4fe; }
+ .badge-da { background: rgba(34, 197, 94, 0.18); color: #86efac; }
+ .badge-web { background: rgba(245, 158, 11, 0.18); color: #fde68a; }
+ .badge-cyber { background: rgba(239, 68, 68, 0.18); color: #fda4af; }
+ .badge-ai { background: rgba(99, 102, 241, 0.18); color: #c7d2fe; }
+
+ .warn-date { color: #fbbf24; font-weight: 600; }
+ .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+ .actions button { min-height: 36px; padding: 0 12px; font-size: 13px; }
+
+ .backup-panel { border-color: rgba(34, 197, 94, 0.45); background: rgba(16, 185, 129, 0.07); }
+ .restore-panel { border-color: rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.07); }
+
+ .subtle { color: var(--text-muted); font-size: 13px; }
+ .count-pill {
+ display: inline-block;
+ padding: 6px 10px;
+ border-radius: 999px;
+ background: rgba(34, 197, 94, 0.18);
+ color: #bbf7d0;
+ font-size: 12px;
+ margin: 10px 0;
+ }
+
+ .checkbox-row {
+ display: flex;
+ align-items: center;
+ gap: 8px;
+ color: #fef3c7;
+ margin-top: 10px;
+ }
+
+ .checkbox-row input { width: auto; min-height: 18px; }
+ #importBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+ @media (max-width: 992px) {
+ .layout { grid-template-columns: 1fr; }
+ .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+ }
+
+ @media (max-width: 768px) {
+ .page { padding: 0 10px; }
+ .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+ .table-wrap { border: none; }
+ table#certTable { min-width: 0; }
+ #certTable thead { display: none; }
+ #certTable tbody tr {
+ display: block;
+ border: 1px solid var(--line);
+ border-radius: 12px;
+ margin-bottom: 10px;
+ background: rgba(19, 27, 52, 0.7);
+ }
+ #certTable tbody td {
+ display: flex;
+ justify-content: space-between;
+ gap: 10px;
+ border-bottom: 1px dashed rgba(169, 183, 226, 0.14);
+ }
+ #certTable tbody td::before {
+ content: attr(data-label);
+ color: var(--text-muted);
+ font-size: 12px;
+ font-weight: 600;
+ }
+ #certTable tbody td:last-child { border-bottom: none; }
+ .actions button { min-height: 44px; }
+ }
  </style>
 </head>
 <body>
- <div class="container">
- <div class="header">
- <h1> Skillvance Admin - Certificate Manager</h1>
+ <header class="topbar">
+ <div class="brand">
+ <span class="brand-dot"></span>
+ <span class="brand-main">Skillvance Admin</span>
+ <span class="brand-sub">- Certificate Manager</span>
+ </div>
  <button class="logout-btn" onclick="logout()">Logout</button>
+ </header>
+
+ <main class="page">
+ <div id="banner" class="banner" role="alert" aria-live="polite">
+ <span id="bannerText"></span>
+ <button type="button" onclick="hideBanner()" aria-label="Close">x</button>
  </div>
 
- <!-- Add Certificate -->
- <div class="section">
+ <details class="howto" open>
+ <summary>How To Use</summary>
+ <ol>
+ <li>Add certificates with required details.</li>
+ <li>Edit or delete from Current Certificates table.</li>
+ <li>Export backup regularly and keep it safe.</li>
+ <li>Use Restore only with a trusted backup.</li>
+ </ol>
+ </details>
+
+ <div class="layout">
+ <aside>
+ <section class="panel">
  <h2 id="formTitle">Add New Certificate</h2>
- <div id="message"></div>
- <div class="row">
+ <div class="form-grid">
  <div class="form-group">
- <label>Certificate ID (e.g., SKV2025ML00001)</label>
+ <label for="certId">Certificate ID <span class="required-dot"></span></label>
  <input type="text" id="certId" placeholder="SKV2025ML00001">
- <div class="status-note">The ID is used as the certificate key and cannot be changed while editing.</div>
+ <div class="field-hint" id="certIdHint">Format: SKV + year + code + number. ID cannot be changed after creation.</div>
  </div>
  <div class="form-group">
- <label>Student Name</label>
+ <label for="certName">Student Name <span class="required-dot"></span></label>
  <input type="text" id="certName" placeholder="John Doe">
  </div>
  <div class="form-group">
- <label>Domain</label>
+ <label for="certDomain">Domain <span class="required-dot"></span></label>
  <select id="certDomain">
  <option>Machine Learning Engineer</option>
  <option>Data Scientist</option>
@@ -78,34 +392,45 @@
  </select>
  </div>
  <div class="form-group">
- <label>Email</label>
+ <label for="certEmail">Email</label>
  <input type="email" id="certEmail" placeholder="student@example.com">
  </div>
  <div class="form-group">
- <label>Issue Date (YYYY-MM-DD)</label>
+ <label for="certDate">Issue Date <span class="required-dot"></span></label>
  <input type="date" id="certDate">
  </div>
  <div class="form-group">
- <label>Marks Scored (0-100)</label>
+ <label for="certScore">Marks Scored (0-100)</label>
  <input type="number" id="certScore" min="0" max="100" step="1" placeholder="95">
  </div>
  <div class="form-group">
- <label>Mentor Name</label>
+ <label for="mentorName">Mentor Name <span class="required-dot"></span></label>
  <input type="text" id="mentorName" placeholder="Mentor Name">
  </div>
  </div>
- <div class="inline-actions">
+ <div class="btn-row">
  <button id="submitCertificateBtn" onclick="saveCertificate()">Add Certificate</button>
- <button id="cancelEditBtn" class="secondary-btn" onclick="cancelEdit()" style="display:none">Cancel Edit</button>
+ <button id="cancelEditBtn" class="secondary-btn" style="display:none" onclick="cancelEdit()">Cancel Edit</button>
  </div>
+ </section>
+ </aside>
+
+ <section>
+ <div class="stats">
+ <div class="stat-card stat-total"><div class="label">Total Certificates</div><div class="value" id="statTotal">0</div></div>
+ <div class="stat-card stat-verified"><div class="label">Verified Certificates</div><div class="value" id="statVerified">0</div></div>
+ <div class="stat-card stat-issues"><div class="label">Data Issues</div><div class="value" id="statIssues">0</div></div>
  </div>
 
- <!-- Current Certificates -->
- <div class="section">
+ <section class="panel">
  <div class="section-head">
  <h2>Current Certificates</h2>
- <button type="button" onclick="downloadAsFile()" style="background:#06b6d4">Export Backup</button>
+ <div class="btn-row" style="margin-top:0">
+ <button type="button" class="export-btn" onclick="downloadAsFile()">Export Backup</button>
+ <button type="button" class="secondary-btn" onclick="copyToClipboard()">Copy Backup JSON</button>
  </div>
+ </div>
+ <div class="table-wrap">
  <table id="certTable">
  <thead>
  <tr>
@@ -114,76 +439,60 @@
  <th>Domain</th>
  <th>Issue Date</th>
  <th>Score</th>
+ <th>Verified</th>
  <th>Action</th>
  </tr>
  </thead>
  <tbody id="certTableBody"></tbody>
  </table>
  </div>
+ </section>
 
- <!-- Export/Backup -->
- <div class="section">
+ <section class="panel backup-panel">
  <h2>Backup Data</h2>
- <p style="margin-bottom: 16px; color: #9595ad;">Copy or download the backup. It can be restored later without manual edits.</p>
- <div class="backup-meta">
- <div class="backup-count" id="exportCount">0 certificates</div>
- <div class="status-note" style="margin-top:0">This preview is a table view. The downloadable backup still includes every field.</div>
- </div>
- <div class="table-wrap">
- <table class="backup-table">
+ <p class="subtle">Create and download a safe export. Full table is shown above; this section only gives a quick preview.</p>
+ <div class="count-pill" id="exportCount">0 certificates ready for export</div>
+ <div class="table-wrap" style="margin-top:8px">
+ <table id="backupPreviewTable" style="min-width:0">
  <thead>
  <tr>
  <th>Certificate ID</th>
  <th>Student Name</th>
- <th>Domain</th>
  <th>Issue Date</th>
- <th>Score</th>
- <th>Mentor</th>
- <th>Verified</th>
  </tr>
  </thead>
- <tbody id="exportTableBody"></tbody>
+ <tbody id="backupPreviewBody"></tbody>
  </table>
  </div>
- <button onclick="copyToClipboard()">Copy to Clipboard</button>
- <button onclick="downloadAsFile()" style="background: #06b6d4; margin-left: 10px;">Download Backup</button>
- <div class="status-note">The backup includes all certificate fields needed for restore and verification.</div>
- </div>
+ </section>
 
- <!-- Import/Restore -->
- <div class="section">
+ <section class="panel restore-panel">
  <h2>Restore From Backup</h2>
- <p style="margin-bottom: 16px; color: #9595ad;">Paste a JSON backup or a certificates.js snippet, or load a file from disk.</p>
- <div class="form-group">
- <label>Backup File</label>
+ <p class="subtle">Caution: importing can overwrite existing data. Confirm before restoring.</p>
+ <div class="form-group" style="margin-top:10px">
+ <label for="backupFile">Backup File</label>
  <input type="file" id="backupFile" accept=".json,.js,.txt" onchange="loadBackupFile(event)">
  </div>
- <div class="form-group">
- <label>Backup Content</label>
- <textarea id="importCode" style="height: 220px; font-family: monospace; font-size: 12px; width: 100%;"></textarea>
+ <div class="form-group" style="margin-top:10px">
+ <label for="importCode">Backup Content</label>
+ <textarea id="importCode" style="height: 170px; font-family: 'DM Mono', monospace;" placeholder='Paste JSON or "const certificatesDB = [...]"'></textarea>
  </div>
  <div class="checkbox-row">
  <input type="checkbox" id="replaceBackup">
- <label for="replaceBackup" style="margin:0;font-weight:500">Replace certificates not present in the backup</label>
+ <label for="replaceBackup">Replace certificates not present in this backup</label>
  </div>
- <div class="inline-actions">
- <button onclick="importFromBackup()">Import Backup</button>
+ <div class="checkbox-row">
+ <input type="checkbox" id="confirmImport">
+ <label for="confirmImport">I understand importing may overwrite data</label>
+ </div>
+ <div class="btn-row">
+ <button id="importBtn" onclick="importFromBackup()" disabled>Import Backup</button>
  <button class="secondary-btn" onclick="document.getElementById('importCode').value = ''">Clear</button>
  </div>
+ </section>
+ </section>
  </div>
-
- <!-- Instructions -->
- <div class="section" style="background: rgba(124,58,237,0.05); border: 1px solid rgba(124,58,237,0.2);">
- <h2> How to Use</h2>
- <ol style="margin-left: 20px;">
- <li> Add certificates above with unique IDs</li>
- <li> Edit or delete entries directly from the table</li>
- <li> Export a backup regularly and store it safely</li>
- <li> Import a backup whenever you need to restore or migrate data</li>
- <li> Verification reads from the live API-backed certificate database</li>
- </ol>
- </div>
- </div>
+ </main>
 
  <script>
  function resolveApiBaseUrl() {
@@ -199,9 +508,10 @@
  }
 
  const API_BASE_URL = resolveApiBaseUrl();
-
  let editingCertificateId = null;
- window.__exportBackupText = '';
+ let exportBackupText = '';
+ let bannerTimer = null;
+ let certificateCache = [];
 
  function escapeHtml(value) {
  const text = String(value ?? '');
@@ -212,6 +522,16 @@
  '"': '&quot;',
  "'": '&#39;'
  }[character]));
+ }
+
+ function normalizeDomain(domain) {
+ const value = String(domain || '').toLowerCase();
+ if (value.includes('machine')) return 'badge-ml';
+ if (value.includes('scientist')) return 'badge-ds';
+ if (value.includes('analyst')) return 'badge-da';
+ if (value.includes('web')) return 'badge-web';
+ if (value.includes('cyber')) return 'badge-cyber';
+ return 'badge-ai';
  }
 
  function formatDateValue(value) {
@@ -229,14 +549,44 @@
  return Number.isFinite(numeric) ? numeric : null;
  }
 
- function setMessage(type, text) {
- const message = document.getElementById('message');
- const className = type === 'success' ? 'success' : 'error';
- message.innerHTML = `<div class="${className}">${escapeHtml(text)}</div>`;
+ function isDateIssue(value) {
+ const date = new Date(value);
+ if (Number.isNaN(date.getTime())) {
+ return true;
  }
 
- function clearMessage() {
- document.getElementById('message').innerHTML = '';
+ const normalized = date.toISOString().slice(0, 10);
+ return normalized === '1970-01-01' || date.getUTCFullYear() < 2020;
+ }
+
+ function hasDataIssue(certificate) {
+ const issueDate = certificate.issueDate || certificate.completionDate;
+ const missingScore = !Number.isFinite(Number(certificate.score));
+ return isDateIssue(issueDate) || missingScore;
+ }
+
+ function showBanner(type, text, timeoutMs = 5000) {
+ const banner = document.getElementById('banner');
+ const bannerText = document.getElementById('bannerText');
+ banner.className = `banner visible ${type === 'success' ? 'success' : 'error'}`;
+ bannerText.textContent = text;
+
+ if (bannerTimer) {
+ clearTimeout(bannerTimer);
+ }
+
+ bannerTimer = setTimeout(() => {
+ hideBanner();
+ }, timeoutMs);
+ }
+
+ function hideBanner() {
+ const banner = document.getElementById('banner');
+ banner.classList.remove('visible');
+ if (bannerTimer) {
+ clearTimeout(bannerTimer);
+ bannerTimer = null;
+ }
  }
 
  function normalizeCertificate(certificate) {
@@ -263,20 +613,24 @@
  };
  }
 
- function setEditMode(certificate) {
+ function fillForm(certificate) {
  editingCertificateId = certificate.id;
  document.getElementById('formTitle').textContent = `Edit Certificate ${certificate.id}`;
  document.getElementById('submitCertificateBtn').textContent = 'Update Certificate';
  document.getElementById('cancelEditBtn').style.display = 'inline-block';
- document.getElementById('certId').value = certificate.id;
- document.getElementById('certId').readOnly = true;
+
+ const certIdInput = document.getElementById('certId');
+ certIdInput.value = certificate.id;
+ certIdInput.disabled = true;
+ certIdInput.title = 'ID cannot be changed after creation.';
+
+ document.getElementById('certIdHint').textContent = 'Locked while editing. ID cannot be changed after creation.';
  document.getElementById('certName').value = certificate.name || '';
  document.getElementById('certDomain').value = certificate.domain || 'Machine Learning Engineer';
  document.getElementById('certEmail').value = certificate.email || '';
  document.getElementById('certDate').value = formatDateInputValue(certificate.issueDate || certificate.completionDate);
  document.getElementById('certScore').value = Number.isFinite(Number(certificate.score)) ? Number(certificate.score) : '';
  document.getElementById('mentorName').value = certificate.mentorName || '';
- clearMessage();
  }
 
  function cancelEdit() {
@@ -284,7 +638,12 @@
  document.getElementById('formTitle').textContent = 'Add New Certificate';
  document.getElementById('submitCertificateBtn').textContent = 'Add Certificate';
  document.getElementById('cancelEditBtn').style.display = 'none';
- document.getElementById('certId').readOnly = false;
+
+ const certIdInput = document.getElementById('certId');
+ certIdInput.disabled = false;
+ certIdInput.title = '';
+
+ document.getElementById('certIdHint').textContent = 'Format: SKV + year + code + number. ID cannot be changed after creation.';
  document.getElementById('certId').value = '';
  document.getElementById('certName').value = '';
  document.getElementById('certDomain').value = 'Machine Learning Engineer';
@@ -292,7 +651,6 @@
  document.getElementById('certDate').value = '';
  document.getElementById('certScore').value = '';
  document.getElementById('mentorName').value = '';
- clearMessage();
  }
 
  async function safeJson(response) {
@@ -357,7 +715,7 @@
  const mentor = document.getElementById('mentorName').value.trim();
 
  if (!id || !name || !date || !mentor) {
- setMessage('error', 'Please fill all required fields.');
+ showBanner('error', 'Please fill all required fields.');
  return;
  }
 
@@ -375,7 +733,7 @@
  verified: true
  })
  });
- setMessage('success', 'Certificate updated successfully.');
+ showBanner('success', 'Certificate updated successfully.');
  cancelEdit();
  } else {
  await apiRequest('/certificates', {
@@ -390,37 +748,31 @@
  mentorName: mentor
  })
  });
-
- setMessage('success', 'Certificate added successfully!');
- document.getElementById('certId').value = '';
- document.getElementById('certName').value = '';
- document.getElementById('certEmail').value = '';
- document.getElementById('certDate').value = '';
- document.getElementById('certScore').value = '';
- document.getElementById('mentorName').value = '';
+ showBanner('success', 'Certificate added successfully.');
+ cancelEdit();
  }
 
- await updateTable();
- await updateExport();
+ await refreshData();
  } catch (error) {
- setMessage('error', error.message);
+ showBanner('error', error.message);
  }
  }
 
  async function deleteCertificate(id) {
- if (confirm('Delete this certificate?')) {
+ const isConfirmed = window.confirm(`Are you sure you want to delete certificate ${id}? This cannot be undone.`);
+ if (!isConfirmed) {
+ return;
+ }
+
  try {
- await apiRequest(`/certificates/${encodeURIComponent(id)}`, {
- method: 'DELETE'
- });
+ await apiRequest(`/certificates/${encodeURIComponent(id)}`, { method: 'DELETE' });
  if (editingCertificateId === id) {
  cancelEdit();
  }
- await updateTable();
- await updateExport();
+ showBanner('success', `Certificate ${id} deleted.`);
+ await refreshData();
  } catch (error) {
- setMessage('error', error.message);
- }
+ showBanner('error', error.message);
  }
  }
 
@@ -430,34 +782,54 @@
  }
 
  function startEdit(certificateId) {
- const certificate = window.__certificateCache?.find(item => item.id === certificateId);
+ const certificate = certificateCache.find(item => item.id === certificateId);
  if (!certificate) {
- setMessage('error', 'Certificate not found. Refresh the list and try again.');
+ showBanner('error', 'Certificate not found. Refresh and try again.');
  return;
  }
 
- setEditMode(certificate);
+ fillForm(certificate);
  window.scrollTo({ top: 0, behavior: 'smooth' });
  }
 
- async function updateTable() {
- const certs = await fetchCertificates();
- window.__certificateCache = certs;
+ function renderStats(certificates) {
+ const total = certificates.length;
+ const verified = certificates.filter(item => item.verified !== false).length;
+ const issues = certificates.filter(hasDataIssue).length;
+
+ document.getElementById('statTotal').textContent = String(total);
+ document.getElementById('statVerified').textContent = String(verified);
+ document.getElementById('statIssues').textContent = String(issues);
+ }
+
+ function renderTable(certificates) {
  const tbody = document.getElementById('certTableBody');
- tbody.innerHTML = certs.map(c => {
- const issueDate = formatDateValue(c.issueDate || c.completionDate);
- const score = Number.isFinite(Number(c.score)) ? Number(c.score) : '-';
+ if (!certificates.length) {
+ tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#b5c0df">No certificates available.</td></tr>';
+ return;
+ }
+
+ tbody.innerHTML = certificates.map(certificate => {
+ const issueDateRaw = certificate.issueDate || certificate.completionDate;
+ const issueDate = formatDateValue(issueDateRaw);
+ const score = Number.isFinite(Number(certificate.score)) ? Number(certificate.score) : '-';
+ const verified = certificate.verified === false ? 'No' : 'Yes';
+ const badgeClass = normalizeDomain(certificate.domain);
+ const dateIssue = isDateIssue(issueDateRaw);
+ const rowClass = hasDataIssue(certificate) ? 'issue-row' : '';
+
  return `
- <tr>
- <td>${escapeHtml(c.id)}</td>
- <td>${escapeHtml(c.name)}</td>
- <td>${escapeHtml(c.domain)}</td>
- <td>${escapeHtml(issueDate)}</td>
- <td>${escapeHtml(score)}</td>
- <td>
- <div class="action-group">
- <button class="edit-btn" onclick="startEdit('${escapeHtml(c.id)}')">Edit</button>
- <button class="delete-btn danger-btn" onclick="deleteCertificate('${escapeHtml(c.id)}')">Delete</button>
+ <tr class="${rowClass}">
+ <td class="id-cell" data-label="Certificate ID">${escapeHtml(certificate.id)}</td>
+ <td data-label="Student Name">${escapeHtml(certificate.name)}</td>
+ <td data-label="Domain"><span class="badge ${badgeClass}">${escapeHtml(certificate.domain)}</span></td>
+ <td data-label="Issue Date" title="${dateIssue ? 'Invalid date - please update this certificate.' : ''}">${dateIssue ? '<span class="warn-date">&#9888; ' : ''}${escapeHtml(issueDate)}${dateIssue ? '</span>' : ''}</td>
+ <td data-label="Score">${escapeHtml(score)}</td>
+ <td data-label="Verified">${escapeHtml(verified)}</td>
+ <td data-label="Action">
+ <div class="actions">
+ <button type="button" class="secondary-btn" onclick="startEdit('${escapeHtml(certificate.id)}')">Edit</button>
+ <button type="button" class="danger-btn" onclick="deleteCertificate('${escapeHtml(certificate.id)}')">Delete</button>
  </div>
  </td>
  </tr>
@@ -465,56 +837,52 @@
  }).join('');
  }
 
- async function updateExport() {
- const certs = await fetchCertificates();
- const backup = buildBackupPayload(certs);
- window.__exportBackupText = JSON.stringify(backup, null, 4);
+ function renderBackupPreview(certificates) {
+ const preview = certificates.slice(0, 3);
+ document.getElementById('exportCount').textContent = `${certificates.length} certificates ready for export`;
 
- const exportTableBody = document.getElementById('exportTableBody');
- document.getElementById('exportCount').textContent = `${certs.length} certificate${certs.length === 1 ? '' : 's'}`;
-
- if (!certs.length) {
- exportTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#9595ad;padding:20px;">No certificates available</td></tr>';
+ const body = document.getElementById('backupPreviewBody');
+ if (!preview.length) {
+ body.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#b5c0df">No certificates to preview.</td></tr>';
  return;
  }
 
- exportTableBody.innerHTML = certs.map(c => {
- const issueDate = formatDateValue(c.issueDate || c.completionDate);
- const score = Number.isFinite(Number(c.score)) ? Number(c.score) : '-';
- const mentor = c.mentorName || '-';
- const verified = c.verified === false ? 'No' : 'Yes';
- return `
+ body.innerHTML = preview.map(certificate => `
  <tr>
- <td>${escapeHtml(c.id)}</td>
- <td>${escapeHtml(c.name)}</td>
- <td>${escapeHtml(c.domain)}</td>
- <td>${escapeHtml(issueDate)}</td>
- <td>${escapeHtml(score)}</td>
- <td>${escapeHtml(mentor)}</td>
- <td>${escapeHtml(verified)}</td>
+ <td class="id-cell">${escapeHtml(certificate.id)}</td>
+ <td>${escapeHtml(certificate.name)}</td>
+ <td>${escapeHtml(formatDateValue(certificate.issueDate || certificate.completionDate))}</td>
  </tr>
- `;
- }).join('');
+ `).join('');
+ }
+
+ async function refreshData() {
+ const certificates = await fetchCertificates();
+ certificateCache = certificates;
+ renderStats(certificates);
+ renderTable(certificates);
+ renderBackupPreview(certificates);
+
+ const payload = buildBackupPayload(certificates);
+ exportBackupText = JSON.stringify(payload, null, 4);
  }
 
  function copyToClipboard() {
- const text = window.__exportBackupText || '';
-
- if (!text) {
- alert('No backup data available yet.');
+ if (!exportBackupText) {
+ showBanner('error', 'No backup data available yet.');
  return;
  }
 
  if (navigator.clipboard && window.isSecureContext) {
- navigator.clipboard.writeText(text).then(() => {
- alert('Copied backup data to clipboard');
+ navigator.clipboard.writeText(exportBackupText).then(() => {
+ showBanner('success', 'Backup JSON copied to clipboard.');
  }).catch(() => {
- fallbackCopy(text);
+ fallbackCopy(exportBackupText);
  });
  return;
  }
 
- fallbackCopy(text);
+ fallbackCopy(exportBackupText);
  }
 
  function fallbackCopy(text) {
@@ -527,18 +895,16 @@
  helper.select();
  document.execCommand('copy');
  document.body.removeChild(helper);
- alert('Copied backup data to clipboard');
+ showBanner('success', 'Backup JSON copied to clipboard.');
  }
 
- async function downloadAsFile() {
- const text = window.__exportBackupText || '';
-
- if (!text) {
- alert('No backup data available yet.');
+ function downloadAsFile() {
+ if (!exportBackupText) {
+ showBanner('error', 'No backup data available yet.');
  return;
  }
 
- const blob = new Blob([text], { type: 'application/json' });
+ const blob = new Blob([exportBackupText], { type: 'application/json' });
  const url = URL.createObjectURL(blob);
  const a = document.createElement('a');
  a.href = url;
@@ -549,7 +915,6 @@
 
  function parseBackupText(text) {
  const trimmed = String(text || '').trim();
-
  if (!trimmed) {
  throw new Error('Paste a backup or choose a file first.');
  }
@@ -583,24 +948,20 @@
  }
 
  const replace = document.getElementById('replaceBackup').checked;
- if (replace && !confirm('Replace certificates that are not present in this backup?')) {
+ if (replace && !window.confirm('Replace certificates that are not present in this backup?')) {
  return;
  }
 
  const response = await apiRequest('/certificates/import', {
  method: 'POST',
- body: JSON.stringify({
- certificates,
- replace
- })
+ body: JSON.stringify({ certificates, replace })
  });
 
- setMessage('success', response.message || 'Backup imported successfully.');
+ showBanner('success', response.message || 'Backup imported successfully.');
  cancelEdit();
- await updateTable();
- await updateExport();
+ await refreshData();
  } catch (error) {
- setMessage('error', error.message);
+ showBanner('error', error.message);
  }
  }
 
@@ -617,14 +978,23 @@
  reader.readAsText(file);
  }
 
+ function setupImportConfirmation() {
+ const checkbox = document.getElementById('confirmImport');
+ const importBtn = document.getElementById('importBtn');
+ checkbox.addEventListener('change', () => {
+ importBtn.disabled = !checkbox.checked;
+ });
+ }
+
  (async function init() {
+ setupImportConfirmation();
+
  const ok = await ensureSession();
  if (!ok) {
  return;
  }
 
- await updateTable();
- await updateExport();
+ await refreshData();
  })();
  </script>
 </body>
