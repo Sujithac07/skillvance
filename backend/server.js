@@ -7,6 +7,7 @@ const dotenv = require('dotenv');
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const mongoose = require('mongoose');
 
 const connectDB = require('./config/db');
 const Admin = require('./models/Admin');
@@ -219,6 +220,36 @@ app.use(async (req, res, next) => {
 
 app.get('/api/health', (_req, res) => {
  res.json({ status: 'OK', service: 'skillvance-api' });
+});
+
+app.get('/api/debug/status', async (_req, res, next) => {
+ try {
+ const Certificate = require('./models/Certificate');
+ const Admin = require('./models/Admin');
+ 
+ const certCount = await Certificate.countDocuments();
+ const adminCount = await Admin.countDocuments();
+ const dbName = mongoose.connection.name;
+ const dbState = mongoose.connection.readyState; // 0=disconnected, 1=connected, 2=connecting, 3=disconnecting
+ 
+ const states = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+ 
+ res.json({
+ database: {
+ name: dbName,
+ state: states[dbState] || 'unknown',
+ certificates: certCount,
+ admins: adminCount
+ },
+ environment: {
+ nodeEnv: process.env.NODE_ENV,
+ vercel: Boolean(process.env.VERCEL),
+ mongoUriSet: Boolean(process.env.MONGODB_URI || process.env.MONGO_URI)
+ }
+ });
+ } catch (error) {
+ return next(error);
+ }
 });
 
 app.use('/api/auth', authRoutes);
