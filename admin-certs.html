@@ -25,8 +25,24 @@
  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
  th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.06); }
  th { background: rgba(124,58,237,0.1); font-weight: 600; }
- .delete-btn { padding: 6px 12px; background: #ef4444; font-size: 12px; margin-top: 8px; }
+ .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); }
+ .backup-table { width: 100%; min-width: 860px; border-collapse: collapse; margin-top: 0; }
+ .backup-table th { white-space: nowrap; background: rgba(6,182,212,0.08); }
+ .backup-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+ .backup-meta { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+ .backup-count { padding: 8px 12px; border-radius: 999px; background: rgba(124,58,237,0.12); color: #d8d8ff; font-size: 12px; }
+ .section-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+ .action-group { display: flex; gap: 8px; flex-wrap: wrap; }
+ .secondary-btn { background: rgba(255,255,255,0.08); }
+ .danger-btn { background: #ef4444; }
+ .delete-btn { padding: 6px 12px; font-size: 12px; }
+ .edit-btn { padding: 6px 12px; font-size: 12px; background: rgba(6,182,212,0.18); }
+ .status-note { margin-top: 8px; color: #9595ad; font-size: 12px; }
  textarea { font-family: monospace; }
+ .row { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+ .inline-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+ .checkbox-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; color: #c9cade; }
+ .checkbox-row input { width: auto; }
  </style>
 </head>
 <body>
@@ -38,11 +54,13 @@
 
  <!-- Add Certificate -->
  <div class="section">
- <h2>Add New Certificate</h2>
+ <h2 id="formTitle">Add New Certificate</h2>
  <div id="message"></div>
+ <div class="row">
  <div class="form-group">
  <label>Certificate ID (e.g., SKV2025ML00001)</label>
  <input type="text" id="certId" placeholder="SKV2025ML00001">
+ <div class="status-note">The ID is used as the certificate key and cannot be changed while editing.</div>
  </div>
  <div class="form-group">
  <label>Student Name</label>
@@ -75,12 +93,19 @@
  <label>Mentor Name</label>
  <input type="text" id="mentorName" placeholder="Mentor Name">
  </div>
- <button onclick="addCertificate()">Add Certificate</button>
+ </div>
+ <div class="inline-actions">
+ <button id="submitCertificateBtn" onclick="saveCertificate()">Add Certificate</button>
+ <button id="cancelEditBtn" class="secondary-btn" onclick="cancelEdit()" style="display:none">Cancel Edit</button>
+ </div>
  </div>
 
  <!-- Current Certificates -->
  <div class="section">
+ <div class="section-head">
  <h2>Current Certificates</h2>
+ <button type="button" onclick="downloadAsFile()" style="background:#06b6d4">Export Backup</button>
+ </div>
  <table id="certTable">
  <thead>
  <tr>
@@ -98,11 +123,53 @@
 
  <!-- Export/Backup -->
  <div class="section">
- <h2> Export Data</h2>
- <p style="margin-bottom: 16px; color: #9595ad;">Copy this code and replace the certificatesDB in certificates.js</p>
- <textarea id="exportCode" style="height: 200px; font-family: monospace; font-size: 12px;"></textarea><br><br>
+ <h2>Backup Data</h2>
+ <p style="margin-bottom: 16px; color: #9595ad;">Copy or download the backup. It can be restored later without manual edits.</p>
+ <div class="backup-meta">
+ <div class="backup-count" id="exportCount">0 certificates</div>
+ <div class="status-note" style="margin-top:0">This preview is a table view. The downloadable backup still includes every field.</div>
+ </div>
+ <div class="table-wrap">
+ <table class="backup-table">
+ <thead>
+ <tr>
+ <th>Certificate ID</th>
+ <th>Student Name</th>
+ <th>Domain</th>
+ <th>Issue Date</th>
+ <th>Score</th>
+ <th>Mentor</th>
+ <th>Verified</th>
+ </tr>
+ </thead>
+ <tbody id="exportTableBody"></tbody>
+ </table>
+ </div>
  <button onclick="copyToClipboard()">Copy to Clipboard</button>
- <button onclick="downloadAsFile()" style="background: #06b6d4; margin-left: 10px;">Download File</button>
+ <button onclick="downloadAsFile()" style="background: #06b6d4; margin-left: 10px;">Download Backup</button>
+ <div class="status-note">The backup includes all certificate fields needed for restore and verification.</div>
+ </div>
+
+ <!-- Import/Restore -->
+ <div class="section">
+ <h2>Restore From Backup</h2>
+ <p style="margin-bottom: 16px; color: #9595ad;">Paste a JSON backup or a certificates.js snippet, or load a file from disk.</p>
+ <div class="form-group">
+ <label>Backup File</label>
+ <input type="file" id="backupFile" accept=".json,.js,.txt" onchange="loadBackupFile(event)">
+ </div>
+ <div class="form-group">
+ <label>Backup Content</label>
+ <textarea id="importCode" style="height: 220px; font-family: monospace; font-size: 12px; width: 100%;"></textarea>
+ </div>
+ <div class="checkbox-row">
+ <input type="checkbox" id="replaceBackup">
+ <label for="replaceBackup" style="margin:0;font-weight:500">Replace certificates not present in the backup</label>
+ </div>
+ <div class="inline-actions">
+ <button onclick="importFromBackup()">Import Backup</button>
+ <button class="secondary-btn" onclick="document.getElementById('importCode').value = ''">Clear</button>
+ </div>
  </div>
 
  <!-- Instructions -->
@@ -110,10 +177,10 @@
  <h2> How to Use</h2>
  <ol style="margin-left: 20px;">
  <li> Add certificates above with unique IDs</li>
- <li> Data is saved in your browser (localStorage)</li>
- <li> Export the code regularly and update certificates.js</li>
- <li> When someone verifies, it checks your certificates.js file</li>
- <li> Keep certificates.js updated with latest entries</li>
+ <li> Edit or delete entries directly from the table</li>
+ <li> Export a backup regularly and store it safely</li>
+ <li> Import a backup whenever you need to restore or migrate data</li>
+ <li> Verification reads from the live API-backed certificate database</li>
  </ol>
  </div>
  </div>
@@ -132,6 +199,101 @@
  }
 
  const API_BASE_URL = resolveApiBaseUrl();
+
+ let editingCertificateId = null;
+ window.__exportBackupText = '';
+
+ function escapeHtml(value) {
+ const text = String(value ?? '');
+ return text.replace(/[&<>"']/g, character => ({
+ '&': '&amp;',
+ '<': '&lt;',
+ '>': '&gt;',
+ '"': '&quot;',
+ "'": '&#39;'
+ }[character]));
+ }
+
+ function formatDateValue(value) {
+ const date = new Date(value);
+ return Number.isNaN(date.getTime()) ? '-' : date.toISOString().slice(0, 10);
+ }
+
+ function formatDateInputValue(value) {
+ const date = new Date(value);
+ return Number.isNaN(date.getTime()) ? '' : date.toISOString().slice(0, 10);
+ }
+
+ function parseScoreValue(value) {
+ const numeric = Number(value);
+ return Number.isFinite(numeric) ? numeric : null;
+ }
+
+ function setMessage(type, text) {
+ const message = document.getElementById('message');
+ const className = type === 'success' ? 'success' : 'error';
+ message.innerHTML = `<div class="${className}">${escapeHtml(text)}</div>`;
+ }
+
+ function clearMessage() {
+ document.getElementById('message').innerHTML = '';
+ }
+
+ function normalizeCertificate(certificate) {
+ return {
+ id: String(certificate?.id || '').trim().toUpperCase(),
+ name: String(certificate?.name || '').trim(),
+ domain: String(certificate?.domain || '').trim(),
+ email: String(certificate?.email || '').trim(),
+ issueDate: formatDateInputValue(certificate?.issueDate || certificate?.completionDate),
+ score: parseScoreValue(certificate?.score),
+ mentorName: String(certificate?.mentorName || '').trim(),
+ verified: certificate?.verified !== false,
+ verificationCount: Number.isFinite(Number(certificate?.verificationCount)) ? Number(certificate.verificationCount) : 0,
+ verifiedIPs: Array.isArray(certificate?.verifiedIPs) ? certificate.verifiedIPs : [],
+ lastVerifiedAt: certificate?.lastVerifiedAt ? new Date(certificate.lastVerifiedAt).toISOString() : ''
+ };
+ }
+
+ function buildBackupPayload(certificates) {
+ return {
+ version: 1,
+ exportedAt: new Date().toISOString(),
+ certificates: certificates.map(normalizeCertificate)
+ };
+ }
+
+ function setEditMode(certificate) {
+ editingCertificateId = certificate.id;
+ document.getElementById('formTitle').textContent = `Edit Certificate ${certificate.id}`;
+ document.getElementById('submitCertificateBtn').textContent = 'Update Certificate';
+ document.getElementById('cancelEditBtn').style.display = 'inline-block';
+ document.getElementById('certId').value = certificate.id;
+ document.getElementById('certId').readOnly = true;
+ document.getElementById('certName').value = certificate.name || '';
+ document.getElementById('certDomain').value = certificate.domain || 'Machine Learning Engineer';
+ document.getElementById('certEmail').value = certificate.email || '';
+ document.getElementById('certDate').value = formatDateInputValue(certificate.issueDate || certificate.completionDate);
+ document.getElementById('certScore').value = Number.isFinite(Number(certificate.score)) ? Number(certificate.score) : '';
+ document.getElementById('mentorName').value = certificate.mentorName || '';
+ clearMessage();
+ }
+
+ function cancelEdit() {
+ editingCertificateId = null;
+ document.getElementById('formTitle').textContent = 'Add New Certificate';
+ document.getElementById('submitCertificateBtn').textContent = 'Add Certificate';
+ document.getElementById('cancelEditBtn').style.display = 'none';
+ document.getElementById('certId').readOnly = false;
+ document.getElementById('certId').value = '';
+ document.getElementById('certName').value = '';
+ document.getElementById('certDomain').value = 'Machine Learning Engineer';
+ document.getElementById('certEmail').value = '';
+ document.getElementById('certDate').value = '';
+ document.getElementById('certScore').value = '';
+ document.getElementById('mentorName').value = '';
+ clearMessage();
+ }
 
  async function safeJson(response) {
  const contentType = response.headers.get('content-type') || '';
@@ -185,7 +347,7 @@
  window.location.href = '/admin-login';
  }
 
- async function addCertificate() {
+ async function saveCertificate() {
  const id = document.getElementById('certId').value.trim().toUpperCase();
  const name = document.getElementById('certName').value.trim();
  const domain = document.getElementById('certDomain').value;
@@ -193,14 +355,29 @@
  const date = document.getElementById('certDate').value;
  const score = document.getElementById('certScore').value;
  const mentor = document.getElementById('mentorName').value.trim();
- const msg = document.getElementById('message');
 
  if (!id || !name || !date || !mentor) {
- msg.innerHTML = '<div class="error"> Please fill all fields</div>';
+ setMessage('error', 'Please fill all required fields.');
  return;
  }
 
  try {
+ if (editingCertificateId) {
+ await apiRequest(`/certificates/${encodeURIComponent(editingCertificateId)}`, {
+ method: 'PUT',
+ body: JSON.stringify({
+ name,
+ domain,
+ email,
+ issueDate: date,
+ score,
+ mentorName: mentor,
+ verified: true
+ })
+ });
+ setMessage('success', 'Certificate updated successfully.');
+ cancelEdit();
+ } else {
  await apiRequest('/certificates', {
  method: 'POST',
  body: JSON.stringify({
@@ -214,17 +391,19 @@
  })
  });
 
- msg.innerHTML = '<div class="success"> Certificate added successfully!</div>';
+ setMessage('success', 'Certificate added successfully!');
  document.getElementById('certId').value = '';
  document.getElementById('certName').value = '';
  document.getElementById('certEmail').value = '';
  document.getElementById('certDate').value = '';
  document.getElementById('certScore').value = '';
  document.getElementById('mentorName').value = '';
+ }
+
  await updateTable();
  await updateExport();
  } catch (error) {
- msg.innerHTML = `<div class="error"> ${error.message}</div>`;
+ setMessage('error', error.message);
  }
  }
 
@@ -234,76 +413,208 @@
  await apiRequest(`/certificates/${encodeURIComponent(id)}`, {
  method: 'DELETE'
  });
+ if (editingCertificateId === id) {
+ cancelEdit();
+ }
  await updateTable();
  await updateExport();
  } catch (error) {
- document.getElementById('message').innerHTML = `<div class="error"> ${error.message}</div>`;
+ setMessage('error', error.message);
  }
  }
  }
 
  async function fetchCertificates() {
- const data = await apiRequest('/certificates?limit=200', { method: 'GET' });
+ const data = await apiRequest('/certificates?limit=1000', { method: 'GET' });
  return data.certificates || [];
+ }
+
+ function startEdit(certificateId) {
+ const certificate = window.__certificateCache?.find(item => item.id === certificateId);
+ if (!certificate) {
+ setMessage('error', 'Certificate not found. Refresh the list and try again.');
+ return;
+ }
+
+ setEditMode(certificate);
+ window.scrollTo({ top: 0, behavior: 'smooth' });
  }
 
  async function updateTable() {
  const certs = await fetchCertificates();
+ window.__certificateCache = certs;
  const tbody = document.getElementById('certTableBody');
- tbody.innerHTML = certs.map(c => `
+ tbody.innerHTML = certs.map(c => {
+ const issueDate = formatDateValue(c.issueDate || c.completionDate);
+ const score = Number.isFinite(Number(c.score)) ? Number(c.score) : '-';
+ return `
  <tr>
- <td>${c.id}</td>
- <td>${c.name}</td>
- <td>${c.domain}</td>
- <td>${new Date(c.issueDate || c.completionDate).toISOString().slice(0, 10)}</td>
- <td>${Number.isFinite(Number(c.score)) ? Number(c.score) : '-'}</td>
- <td><button class="delete-btn" onclick="deleteCertificate('${c.id}')">Delete</button></td>
+ <td>${escapeHtml(c.id)}</td>
+ <td>${escapeHtml(c.name)}</td>
+ <td>${escapeHtml(c.domain)}</td>
+ <td>${escapeHtml(issueDate)}</td>
+ <td>${escapeHtml(score)}</td>
+ <td>
+ <div class="action-group">
+ <button class="edit-btn" onclick="startEdit('${escapeHtml(c.id)}')">Edit</button>
+ <button class="delete-btn danger-btn" onclick="deleteCertificate('${escapeHtml(c.id)}')">Delete</button>
+ </div>
+ </td>
  </tr>
- `).join('');
+ `;
+ }).join('');
  }
 
  async function updateExport() {
  const certs = await fetchCertificates();
- const normalized = certs.map(c => ({
- id: c.id,
- name: c.name,
- domain: c.domain,
- email: c.email || '',
- issueDate: new Date(c.issueDate || c.completionDate).toISOString().slice(0, 10),
- score: Number.isFinite(Number(c.score)) ? Number(c.score) : null,
- mentorName: c.mentorName,
- verified: Boolean(c.verified)
- }));
- const code = `const certificatesDB = ${JSON.stringify(normalized, null, 4)};`;
- document.getElementById('exportCode').value = code;
+ const backup = buildBackupPayload(certs);
+ window.__exportBackupText = JSON.stringify(backup, null, 4);
+
+ const exportTableBody = document.getElementById('exportTableBody');
+ document.getElementById('exportCount').textContent = `${certs.length} certificate${certs.length === 1 ? '' : 's'}`;
+
+ if (!certs.length) {
+ exportTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#9595ad;padding:20px;">No certificates available</td></tr>';
+ return;
+ }
+
+ exportTableBody.innerHTML = certs.map(c => {
+ const issueDate = formatDateValue(c.issueDate || c.completionDate);
+ const score = Number.isFinite(Number(c.score)) ? Number(c.score) : '-';
+ const mentor = c.mentorName || '-';
+ const verified = c.verified === false ? 'No' : 'Yes';
+ return `
+ <tr>
+ <td>${escapeHtml(c.id)}</td>
+ <td>${escapeHtml(c.name)}</td>
+ <td>${escapeHtml(c.domain)}</td>
+ <td>${escapeHtml(issueDate)}</td>
+ <td>${escapeHtml(score)}</td>
+ <td>${escapeHtml(mentor)}</td>
+ <td>${escapeHtml(verified)}</td>
+ </tr>
+ `;
+ }).join('');
  }
 
  function copyToClipboard() {
- const code = document.getElementById('exportCode');
- code.select();
+ const text = window.__exportBackupText || '';
+
+ if (!text) {
+ alert('No backup data available yet.');
+ return;
+ }
+
+ if (navigator.clipboard && window.isSecureContext) {
+ navigator.clipboard.writeText(text).then(() => {
+ alert('Copied backup data to clipboard');
+ }).catch(() => {
+ fallbackCopy(text);
+ });
+ return;
+ }
+
+ fallbackCopy(text);
+ }
+
+ function fallbackCopy(text) {
+ const helper = document.createElement('textarea');
+ helper.value = text;
+ helper.setAttribute('readonly', 'true');
+ helper.style.position = 'absolute';
+ helper.style.left = '-9999px';
+ document.body.appendChild(helper);
+ helper.select();
  document.execCommand('copy');
- alert(' Copied! Update certificates.js with this code');
+ document.body.removeChild(helper);
+ alert('Copied backup data to clipboard');
  }
 
  async function downloadAsFile() {
- const certs = await fetchCertificates();
- const normalized = certs.map(c => ({
- id: c.id,
- name: c.name,
- domain: c.domain,
- email: c.email || '',
- issueDate: new Date(c.issueDate || c.completionDate).toISOString().slice(0, 10),
- score: Number.isFinite(Number(c.score)) ? Number(c.score) : null,
- mentorName: c.mentorName,
- verified: Boolean(c.verified)
- }));
- const code = `const certificatesDB = ${JSON.stringify(normalized, null, 4)};\n\n// Add this to your certificates.js file`;
- const blob = new Blob([code], { type: 'text/javascript' });
+ const text = window.__exportBackupText || '';
+
+ if (!text) {
+ alert('No backup data available yet.');
+ return;
+ }
+
+ const blob = new Blob([text], { type: 'application/json' });
  const url = URL.createObjectURL(blob);
  const a = document.createElement('a');
  a.href = url;
- a.download = 'certificates_data.js';
+ a.download = 'certificates-backup.json';
  a.click();
+ URL.revokeObjectURL(url);
+ }
+
+ function parseBackupText(text) {
+ const trimmed = String(text || '').trim();
+
+ if (!trimmed) {
+ throw new Error('Paste a backup or choose a file first.');
+ }
+
+ const certificatesMatch = trimmed.match(/const\s+certificatesDB\s*=\s*(\[[\s\S]*\])\s*;?/);
+ const sourceText = certificatesMatch ? certificatesMatch[1] : trimmed;
+ const parsed = JSON.parse(sourceText);
+
+ if (Array.isArray(parsed)) {
+ return parsed;
+ }
+
+ if (Array.isArray(parsed.certificates)) {
+ return parsed.certificates;
+ }
+
+ if (Array.isArray(parsed.items)) {
+ return parsed.items;
+ }
+
+ throw new Error('Backup must contain a certificate array.');
+ }
+
+ async function importFromBackup() {
+ try {
+ const backupText = document.getElementById('importCode').value;
+ const certificates = parseBackupText(backupText);
+
+ if (!certificates.length) {
+ throw new Error('Backup does not contain any certificates.');
+ }
+
+ const replace = document.getElementById('replaceBackup').checked;
+ if (replace && !confirm('Replace certificates that are not present in this backup?')) {
+ return;
+ }
+
+ const response = await apiRequest('/certificates/import', {
+ method: 'POST',
+ body: JSON.stringify({
+ certificates,
+ replace
+ })
+ });
+
+ setMessage('success', response.message || 'Backup imported successfully.');
+ cancelEdit();
+ await updateTable();
+ await updateExport();
+ } catch (error) {
+ setMessage('error', error.message);
+ }
+ }
+
+ function loadBackupFile(event) {
+ const file = event.target.files?.[0];
+ if (!file) {
+ return;
+ }
+
+ const reader = new FileReader();
+ reader.onload = loadEvent => {
+ document.getElementById('importCode').value = String(loadEvent.target?.result || '');
+ };
+ reader.readAsText(file);
  }
 
  (async function init() {

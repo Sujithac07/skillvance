@@ -27,6 +27,63 @@ function parseScore(value) {
  return Number.isFinite(num) ? num : undefined;
 }
 
+function parseDate(value) {
+ if (!value) {
+ return undefined;
+ }
+
+ const date = new Date(value);
+ return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+function normalizeCertificatePayload(payload) {
+ const id = String(payload?.id || '').trim().toUpperCase();
+ const name = String(payload?.name || '').trim();
+ const domain = String(payload?.domain || '').trim();
+ const email = String(payload?.email || '').trim().toLowerCase();
+ const mentorName = String(payload?.mentorName || '').trim();
+ const issueDate = parseDate(getIssueDateFromBody(payload));
+ const score = parseScore(payload?.score);
+ const verified = payload?.verified === undefined ? true : Boolean(payload?.verified);
+
+ if (!id || !name || !domain || !issueDate || !mentorName) {
+ throw new Error('Certificate ID, name, domain, issue date, and mentor name are required.');
+ }
+
+ const normalized = {
+ id,
+ name,
+ domain,
+ issueDate,
+ mentorName,
+ verified
+ };
+
+ if (email) {
+ normalized.email = email;
+ }
+
+ if (score !== undefined) {
+ normalized.score = score;
+ }
+
+ const verificationCount = Number(payload?.verificationCount);
+ if (Number.isFinite(verificationCount) && verificationCount >= 0) {
+ normalized.verificationCount = Math.floor(verificationCount);
+ }
+
+ if (Array.isArray(payload?.verifiedIPs)) {
+ normalized.verifiedIPs = payload.verifiedIPs.filter(ip => typeof ip === 'string' && ip.trim().length > 0).map(ip => ip.trim());
+ }
+
+ const lastVerifiedAt = parseDate(payload?.lastVerifiedAt);
+ if (lastVerifiedAt) {
+ normalized.lastVerifiedAt = lastVerifiedAt;
+ }
+
+ return normalized;
+}
+
 function getIssueDateFromBody(body) {
  return body?.issueDate || body?.completionDate;
 }
@@ -84,7 +141,7 @@ router.get('/verify/:id', verifyLimiter, async (req, res, next) => {
 router.get('/', verifyToken, isAdmin, async (req, res, next) => {
  try {
  const rawLimit = Number(req.query.limit || 100);
- const limit = Math.min(Math.max(rawLimit, 1), 200);
+ const limit = Math.min(Math.max(rawLimit, 1), 1000);
 
  const certificates = await Certificate.find({})
  .sort({ createdAt: -1 })
@@ -93,6 +150,50 @@ router.get('/', verifyToken, isAdmin, async (req, res, next) => {
 
  return res.json({ certificates });
  } catch (error) {
+ return next(error);
+ }
+});
+
+router.post('/import', verifyToken, isAdmin, async (req, res, next) => {
+ try {
+ const source = Array.isArray(req.body)
+ ? req.body
+ : Array.isArray(req.body?.certificates)
+ ? req.body.certificates
+ : Array.isArray(req.body?.items)
+ ? req.body.items
+ : null;
+
+ if (!source || source.length === 0) {
+ return res.status(400).json({ message: 'At least one certificate is required for import.' });
+ }
+
+ const replace = Boolean(req.body?.replace);
+ const certificates = source.map(normalizeCertificatePayload);
+
+ for (const certificate of certificates) {
+ await Certificate.findOneAndUpdate(
+ { id: certificate.id },
+ { $set: certificate, $setOnInsert: { verificationCount: 0, verifiedIPs: [] } },
+ { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+ );
+ }
+
+ if (replace) {
+ const ids = certificates.map(certificate => certificate.id);
+ await Certificate.deleteMany({ id: { $nin: ids } });
+ }
+
+ return res.json({
+ message: replace ? 'Certificates imported and replaced successfully.' : 'Certificates imported successfully.',
+ imported: certificates.length,
+ replace
+ });
+ } catch (error) {
+ if (error.message && error.message.includes('required')) {
+ return res.status(400).json({ message: error.message });
+ }
+
  return next(error);
  }
 });
