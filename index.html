@@ -29,7 +29,12 @@
  <nav class="navbar" id="navbar" style="top:38px">
  <div class="container">
  <a href="/" class="nav-logo"><img src="skillvance_logo_color.png" alt="Skillvance Technologies" class="logo-img"></a>
+ <button type="button" class="nav-drawer-backdrop" id="navDrawerBackdrop" onclick="closeNav()" aria-label="Close navigation"></button>
  <div class="nav-links" id="navLinks">
+ <div class="mobile-drawer-head">
+ <span>Menu</span>
+ <button type="button" class="drawer-close" onclick="closeNav()" aria-label="Close menu">&times;</button>
+ </div>
  <a href="/" class="active">Home</a>
  <a href="/about">About</a>
  <a href="/careers">Careers & Internships</a>
@@ -37,7 +42,7 @@
  <a href="/contact">Contact</a>
  <a href="/contact" class="nav-cta">Enquire Now</a>
  </div>
- <div class="hamburger" id="hamburger" onclick="toggleNav()"><span></span><span></span><span></span></div>
+ <button type="button" class="hamburger" id="hamburger" onclick="toggleNav()" aria-label="Open navigation" aria-controls="navLinks" aria-expanded="false"><span></span><span></span><span></span></button>
  </div>
  </nav>
 
@@ -65,7 +70,7 @@
  </div>
  <div class="hero-stats">
  <div class="hero-stat">
- <div class="num" data-count="6">0</div>
+ <div class="num" data-count="6">6</div>
  <div class="label">Domains</div>
  </div>
  <div class="hero-stat">
@@ -252,19 +257,50 @@
  </p>
  <div class="reveal" style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
  <div style="padding:24px;background:var(--bg-card);border:1px solid var(--border-glass);border-radius:var(--radius-md)">
- <h4 style="color:var(--accent-3);margin-bottom:12px">Expanding Domains</h4>
+ <h4 style="color:var(--accent-3);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+ <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+ <rect x="3" y="3" width="8" height="8" rx="1.5"></rect>
+ <rect x="13" y="3" width="8" height="8" rx="1.5"></rect>
+ <rect x="3" y="13" width="8" height="8" rx="1.5"></rect>
+ <rect x="13" y="13" width="8" height="8" rx="1.5"></rect>
+ </svg>
+ <span>Expanding Domains</span>
+ </h4>
  <p style="color:var(--text-secondary);font-size:0.9rem">By 2026, we'll launch Advanced AI, Cloud Infrastructure, DevOps, and IoT specializations.</p>
  </div>
  <div style="padding:24px;background:var(--bg-card);border:1px solid var(--border-glass);border-radius:var(--radius-md)">
- <h4 style="color:var(--accent-2);margin-bottom:12px">Global Reach</h4>
+ <h4 style="color:var(--accent-2);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+ <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+ <circle cx="12" cy="12" r="9"></circle>
+ <path d="M3 12h18"></path>
+ <path d="M12 3a14 14 0 0 1 0 18"></path>
+ <path d="M12 3a14 14 0 0 0 0 18"></path>
+ </svg>
+ <span>Global Reach</span>
+ </h4>
  <p style="color:var(--text-secondary);font-size:0.9rem">Partner with companies worldwide to create international mentorship and job placement pathways.</p>
  </div>
  <div style="padding:24px;background:var(--bg-card);border:1px solid var(--border-glass);border-radius:var(--radius-md)">
- <h4 style="color:var(--accent-4);margin-bottom:12px">Corporate Partnerships</h4>
+ <h4 style="color:var(--accent-4);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+ <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+ <path d="M8.5 13.5 4.5 9.5a2 2 0 0 1 0-2.8l.2-.2a2 2 0 0 1 2.8 0l4 4"></path>
+ <path d="M15.5 10.5 19.5 6.5a2 2 0 0 1 2.8 0l.2.2a2 2 0 0 1 0 2.8l-4 4"></path>
+ <path d="m9.8 11.8 4.4 4.4a2 2 0 0 0 2.8 0l.2-.2a2 2 0 0 0 0-2.8l-4.4-4.4"></path>
+ <path d="M7 14.6 5.3 16.3a2 2 0 0 0 0 2.8l.2.2a2 2 0 0 0 2.8 0L10 17.6"></path>
+ </svg>
+ <span>Corporate Partnerships</span>
+ </h4>
  <p style="color:var(--text-secondary);font-size:0.9rem">Direct placement programs with top tech companies. Your capstone could become your first project.</p>
  </div>
  <div style="padding:24px;background:var(--bg-card);border:1px solid var(--border-glass);border-radius:var(--radius-md)">
- <h4 style="color:var(--accent-1);margin-bottom:12px">Continuous Growth</h4>
+ <h4 style="color:var(--accent-1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+ <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+ <path d="M4 18h16"></path>
+ <path d="m6 15 4-4 3 3 5-6"></path>
+ <path d="M14 8h4v4"></path>
+ </svg>
+ <span>Continuous Growth</span>
+ </h4>
  <p style="color:var(--text-secondary);font-size:0.9rem">Advanced tracks for alumni. From intern to junior engineer to senior contributor.</p>
  </div>
  </div>

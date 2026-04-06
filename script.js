@@ -132,20 +132,28 @@ function initNavbar() {
 function toggleNav() {
  const navLinks = document.getElementById('navLinks');
  const hamburger = document.getElementById('hamburger');
+ const backdrop = document.getElementById('navDrawerBackdrop');
  if (!navLinks || !hamburger) return;
 
  const isOpen = navLinks.classList.toggle('open');
  hamburger.classList.toggle('active', isOpen);
+ if (backdrop) {
+ backdrop.classList.toggle('open', isOpen);
+ }
  hamburger.setAttribute('aria-expanded', String(isOpen));
  document.body.style.overflow = isOpen ? 'hidden' : '';
 }
 function closeNav() {
  const navLinks = document.getElementById('navLinks');
  const hamburger = document.getElementById('hamburger');
+ const backdrop = document.getElementById('navDrawerBackdrop');
  if (!navLinks || !hamburger) return;
 
  navLinks.classList.remove('open');
  hamburger.classList.remove('active');
+ if (backdrop) {
+ backdrop.classList.remove('open');
+ }
  hamburger.setAttribute('aria-expanded', 'false');
  document.body.style.overflow = '';
 }
@@ -164,6 +172,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
  document.addEventListener('keydown', event => {
  if (event.key === 'Escape') {
+ closeNav();
+ }
+ });
+
+ window.addEventListener('resize', () => {
+ if (!window.matchMedia('(max-width: 768px)').matches) {
  closeNav();
  }
  });
@@ -456,6 +470,7 @@ function initCounters() {
  entries.forEach(e => {
  if (e.isIntersecting) {
  const target = parseInt(e.target.dataset.count);
+ e.target.textContent = '0';
  let current = 0; const step = Math.ceil(target / 40);
  const timer = setInterval(() => {
  current += step;
