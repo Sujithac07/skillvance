@@ -114,6 +114,21 @@
  }
 
  const API_BASE_URL = resolveApiBaseUrl();
+ const REQUEST_TIMEOUT_MS = 12000;
+
+ async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
+ const controller = new AbortController();
+ const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+ try {
+ return await fetch(url, {
+ ...options,
+ signal: controller.signal
+ });
+ } finally {
+ clearTimeout(timeoutId);
+ }
+ }
 
  async function safeJson(response) {
  const contentType = response.headers.get('content-type') || '';
@@ -130,7 +145,7 @@
 
  async function isSessionValid() {
  try {
- const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+ const response = await fetchWithTimeout(`${API_BASE_URL}/auth/verify`, {
  credentials: 'include'
  });
  return response.ok;
@@ -153,7 +168,7 @@
 
  try {
  console.log('[LOGIN] Attempting login for:', username);
- const response = await fetch(`${API_BASE_URL}/auth/login`, {
+ const response = await fetchWithTimeout(`${API_BASE_URL}/auth/login`, {
  method: 'POST',
  credentials: 'include',
  headers: {
@@ -177,7 +192,11 @@
  window.location.href = '/admin-certs';
  } catch (error) {
  console.error('[LOGIN] Network error:', error);
- errorMsg.innerHTML = `<div class="error">Login service unavailable: ${String(error.message || error)}</div>`;
+ const isTimeout = error && (error.name === 'AbortError');
+ const message = isTimeout
+ ? 'Login request timed out. Please ensure backend is running on localhost:5000 and try again.'
+ : `Login service unavailable: ${String(error.message || error)}`;
+ errorMsg.innerHTML = `<div class="error">${message}</div>`;
  }
  }
 

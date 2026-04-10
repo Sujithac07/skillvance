@@ -60,7 +60,4 @@ adminSchema.methods.needsPasswordRehash = function needsPasswordRehash() {
  }
 };
 
-// Explicit index for login lookups.
-adminSchema.index({ username: 1 });
-
 module.exports = mongoose.models.Admin || mongoose.model('Admin', adminSchema);
