@@ -5,7 +5,6 @@ const certificateSchema = new mongoose.Schema(
  id: {
  type: String,
  required: true,
- unique: true,
  uppercase: true,
  trim: true,
  match: /^SKV\d{4}[A-Z]{2,5}\d{5}$/
@@ -81,6 +80,11 @@ certificateSchema.virtual('completionDate')
 
 certificateSchema.set('toJSON', { virtuals: true });
 certificateSchema.set('toObject', { virtuals: true });
+
+certificateSchema.index({ id: 1 }, { unique: true });
+certificateSchema.index({ verified: 1 });
+certificateSchema.index({ createdAt: -1 });
+certificateSchema.index({ domain: 1 });
 
 module.exports =
  mongoose.models.Certificate || mongoose.model('Certificate', certificateSchema);

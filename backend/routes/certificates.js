@@ -6,6 +6,13 @@ const Certificate = require('../models/Certificate');
 const { verifyToken, isAdmin } = require('../middleware/auth');
 
 const router = express.Router();
+const CERT_ID_REGEX = /^SKV\d{4}[A-Z]{2,5}\d{5}$/;
+const LIST_CACHE_TTL_MS = 30 * 1000;
+
+const certificateListCache = {
+ data: null,
+ expiresAt: 0
+};
 
 const verifyLimiterWindowMs = Number(process.env.CERT_VERIFY_RATE_LIMIT_WINDOW_MS || 10 * 60 * 1000);
 const verifyLimiterMax = Number(process.env.CERT_VERIFY_RATE_LIMIT_MAX || 60);
@@ -34,6 +41,69 @@ function parseDate(value) {
 
  const date = new Date(value);
  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+function invalidateCertificateListCache() {
+ certificateListCache.data = null;
+ certificateListCache.expiresAt = 0;
+}
+
+function validateCertificate(candidate, { partial = false } = {}) {
+ const id = String(candidate?.id || '').trim().toUpperCase();
+ if (!partial || candidate?.id !== undefined) {
+ if (!id || !CERT_ID_REGEX.test(id)) {
+ return 'Certificate ID must match format SKVYYYYCODE00000.';
+ }
+ }
+
+ const name = candidate?.name;
+ if (!partial || name !== undefined) {
+ const normalizedName = String(name || '').trim();
+ if (!normalizedName || normalizedName.length < 2 || normalizedName.length > 120) {
+ return 'Student name must be between 2 and 120 characters.';
+ }
+ }
+
+ const domain = candidate?.domain;
+ if (!partial || domain !== undefined) {
+ const normalizedDomain = String(domain || '').trim();
+ if (!normalizedDomain || normalizedDomain.length > 120) {
+ return 'Domain is required and must be 120 characters or less.';
+ }
+ }
+
+ if (!partial || candidate?.email !== undefined) {
+ const email = String(candidate?.email || '').trim();
+ if (email.length > 180) {
+ return 'Email must be 180 characters or less.';
+ }
+ }
+
+ const issueDate = candidate?.issueDate;
+ if (!partial || issueDate !== undefined) {
+ if (!(issueDate instanceof Date) || Number.isNaN(issueDate.getTime())) {
+ return 'Issue date is invalid.';
+ }
+ }
+
+ if (!partial || candidate?.mentorName !== undefined) {
+ const mentorName = String(candidate?.mentorName || '').trim();
+ if (!mentorName || mentorName.length > 120) {
+ return 'Mentor name is required and must be 120 characters or less.';
+ }
+ }
+
+ if (!partial || candidate?.score !== undefined) {
+ const score = candidate?.score;
+ if (score !== undefined) {
+ const numericScore = Number(score);
+ if (!Number.isFinite(numericScore) || numericScore < 0 || numericScore > 100) {
+ return 'Score must be a number between 0 and 100.';
+ }
+ }
+ }
+
+ return null;
 }
 
 function normalizeCertificatePayload(payload) {
@@ -112,7 +182,20 @@ router.get('/verify/:id', verifyLimiter, async (req, res, next) => {
  $set: { lastVerifiedAt: new Date() },
  $addToSet: { verifiedIPs: clientIp }
  },
- { new: true }
+ {
+ new: true,
+ projection: {
+ id: 1,
+ name: 1,
+ domain: 1,
+ email: 1,
+ issueDate: 1,
+ score: 1,
+ mentorName: 1,
+ verificationCount: 1,
+ lastVerifiedAt: 1
+ }
+ }
  ).lean();
  if (!certificate) {
  return res.status(404).json({ message: 'Certificate not found.' });
@@ -152,16 +235,21 @@ router.get('/', verifyToken, isAdmin, async (req, res, next) => {
  const rawLimit = Number(req.query.limit || 100);
  const limit = Math.min(Math.max(rawLimit, 1), 1000);
 
- console.log(`[DEBUG] Fetching certificates with limit=${limit}`);
+ if (certificateListCache.data && certificateListCache.expiresAt > Date.now()) {
+ return res.json({ certificates: certificateListCache.data });
+ }
+
  const certificates = await Certificate.find({})
+ .select('id name domain email issueDate score mentorName verified verificationCount lastVerifiedAt createdAt updatedAt')
  .sort({ createdAt: -1 })
  .limit(limit)
  .lean();
 
- console.log(`[DEBUG] Found ${certificates.length} certificates`);
+ certificateListCache.data = certificates;
+ certificateListCache.expiresAt = Date.now() + LIST_CACHE_TTL_MS;
+
  return res.json({ certificates });
  } catch (error) {
- console.error('[ERROR] Certificate fetch failed:', error);
  return next(error);
  }
 });
@@ -184,17 +272,31 @@ router.post('/import', verifyToken, isAdmin, async (req, res, next) => {
  const certificates = source.map(normalizeCertificatePayload);
 
  for (const certificate of certificates) {
- await Certificate.findOneAndUpdate(
- { id: certificate.id },
- { $set: certificate, $setOnInsert: { verificationCount: 0, verifiedIPs: [] } },
- { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
- );
+ const validationError = validateCertificate(certificate, { partial: false });
+ if (validationError) {
+ return res.status(400).json({ message: validationError });
  }
+ }
+
+ const operations = certificates.map(certificate => ({
+ updateOne: {
+ filter: { id: certificate.id },
+ update: {
+ $set: certificate,
+ $setOnInsert: { verificationCount: 0, verifiedIPs: [] }
+ },
+ upsert: true
+ }
+ }));
+
+ await Certificate.bulkWrite(operations, { ordered: false });
 
  if (replace) {
  const ids = certificates.map(certificate => certificate.id);
  await Certificate.deleteMany({ id: { $nin: ids } });
  }
+
+ invalidateCertificateListCache();
 
  return res.json({
  message: replace ? 'Certificates imported and replaced successfully.' : 'Certificates imported successfully.',
@@ -237,7 +339,15 @@ router.post('/', verifyToken, isAdmin, async (req, res, next) => {
  payload.createdBy = req.user.sub;
  }
 
+ payload.issueDate = parseDate(payload.issueDate);
+ const validationError = validateCertificate(payload, { partial: false });
+ if (validationError) {
+ return res.status(400).json({ message: validationError });
+ }
+
  const created = await Certificate.create(payload);
+
+ invalidateCertificateListCache();
 
  return res.status(201).json({
  message: 'Certificate created successfully.',
@@ -260,12 +370,12 @@ router.put('/:id', verifyToken, isAdmin, async (req, res, next) => {
  }
 
  const update = {
- name: req.body?.name,
- domain: req.body?.domain,
- email: req.body?.email,
- issueDate: getIssueDateFromBody(req.body),
+ name: req.body?.name !== undefined ? String(req.body.name).trim() : undefined,
+ domain: req.body?.domain !== undefined ? String(req.body.domain).trim() : undefined,
+ email: req.body?.email !== undefined ? String(req.body.email).trim().toLowerCase() : undefined,
+ issueDate: parseDate(getIssueDateFromBody(req.body)),
  score: parseScore(req.body?.score),
- mentorName: req.body?.mentorName,
+ mentorName: req.body?.mentorName !== undefined ? String(req.body.mentorName).trim() : undefined,
  verified: req.body?.verified
  };
 
@@ -275,10 +385,19 @@ router.put('/:id', verifyToken, isAdmin, async (req, res, next) => {
  }
  });
 
+ if (Object.keys(update).length === 0) {
+ return res.status(400).json({ message: 'Provide at least one field to update.' });
+ }
+
+ const validationError = validateCertificate({ id, ...update }, { partial: true });
+ if (validationError) {
+ return res.status(400).json({ message: validationError });
+ }
+
  const certificate = await Certificate.findOneAndUpdate(
  { id },
  { $set: update },
- { new: true, runValidators: true }
+ { new: true }
  );
 
  if (!certificate) {
@@ -305,6 +424,8 @@ router.delete('/:id', verifyToken, isAdmin, async (req, res, next) => {
  if (!certificate) {
  return res.status(404).json({ message: 'Certificate not found.' });
  }
+
+ invalidateCertificateListCache();
 
  return res.json({ message: 'Certificate deleted successfully.' });
  } catch (error) {

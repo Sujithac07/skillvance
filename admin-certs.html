@@ -106,18 +106,6 @@
  to { opacity: 1; transform: translateY(0); }
  }
 
- .howto {
- background: rgba(124, 58, 237, 0.08);
- border: 1px solid rgba(124, 58, 237, 0.28);
- border-radius: 14px;
- padding: 14px 16px;
- margin-bottom: 14px;
- }
-
- .howto summary { cursor: pointer; font-weight: 600; }
- .howto ol { margin: 10px 0 0 20px; color: var(--text-muted); }
- .howto li { margin-bottom: 6px; }
-
  .layout {
  display: grid;
  gap: 14px;
@@ -356,16 +344,6 @@
  <button type="button" onclick="hideBanner()" aria-label="Close">x</button>
  </div>
 
- <details class="howto" open>
- <summary>How To Use</summary>
- <ol>
- <li>Add certificates with required details.</li>
- <li>Edit or delete from Current Certificates table.</li>
- <li>Export backup regularly and keep it safe.</li>
- <li>Use Restore only with a trusted backup.</li>
- </ol>
- </details>
-
  <div class="layout">
  <aside>
  <section class="panel">
@@ -508,9 +486,11 @@
  }
 
  const API_BASE_URL = resolveApiBaseUrl();
+ const REQUEST_TIMEOUT_MS = 2000;
  let editingCertificateId = null;
  let exportBackupText = '';
  let bannerTimer = null;
+ let refreshTimer = null;
  let certificateCache = [];
 
  function escapeHtml(value) {
@@ -666,10 +646,24 @@
  }
  }
 
+ async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
+ const controller = new AbortController();
+ const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+ try {
+ return await fetch(url, {
+ ...options,
+ signal: controller.signal
+ });
+ } finally {
+ clearTimeout(timeoutId);
+ }
+ }
+
  async function apiRequest(path, options = {}) {
  const hasBody = options.body !== undefined;
  try {
- const response = await fetch(`${API_BASE_URL}${path}`, {
+ const response = await fetchWithTimeout(`${API_BASE_URL}${path}`, {
  ...options,
  credentials: 'include',
  headers: {
@@ -687,9 +681,52 @@
 
  return data;
  } catch (error) {
+ if (error && error.name === 'AbortError') {
+ throw new Error('Request timed out. Please try again.');
+ }
  console.error(`[API FAILED] ${options.method || 'GET'} ${path}:`, error);
  throw error;
  }
+ }
+
+ function renderAll(certificates) {
+ renderStats(certificates);
+ renderTable(certificates);
+ renderBackupPreview(certificates);
+
+ const payload = buildBackupPayload(certificates);
+ exportBackupText = JSON.stringify(payload, null, 4);
+ }
+
+ function upsertCertificateInCache(certificate) {
+ const normalized = normalizeCertificate(certificate);
+ const index = certificateCache.findIndex(item => item.id === normalized.id);
+
+ if (index >= 0) {
+ certificateCache[index] = normalized;
+ } else {
+ certificateCache.unshift(normalized);
+ }
+ }
+
+ function removeCertificateFromCache(id) {
+ certificateCache = certificateCache.filter(item => item.id !== id);
+ }
+
+ function scheduleBackgroundRefresh(delayMs = 2000) {
+ if (refreshTimer) {
+ clearTimeout(refreshTimer);
+ }
+
+ refreshTimer = setTimeout(async () => {
+ try {
+ const certificates = await fetchCertificates();
+ certificateCache = certificates;
+ renderAll(certificateCache);
+ } catch (_error) {
+ // Keep current UI state when background sync fails.
+ }
+ }, delayMs);
  }
 
  async function ensureSession() {
@@ -712,6 +749,7 @@
  }
 
  async function saveCertificate() {
+ const startedAt = performance.now();
  const id = document.getElementById('certId').value.trim().toUpperCase();
  const name = document.getElementById('certName').value.trim();
  const domain = document.getElementById('certDomain').value;
@@ -725,9 +763,29 @@
  return;
  }
 
+ const previousCache = certificateCache.map(item => ({ ...item }));
+ const optimisticId = editingCertificateId || id;
+ const existing = certificateCache.find(item => item.id === optimisticId);
+ const optimisticCertificate = {
+ id: optimisticId,
+ name,
+ domain,
+ email,
+ issueDate: date,
+ score,
+ mentorName: mentor,
+ verified: true,
+ verificationCount: existing ? existing.verificationCount : 0,
+ verifiedIPs: existing ? existing.verifiedIPs : [],
+ lastVerifiedAt: existing ? existing.lastVerifiedAt : ''
+ };
+
+ upsertCertificateInCache(optimisticCertificate);
+ renderAll(certificateCache);
+
  try {
  if (editingCertificateId) {
- await apiRequest(`/certificates/${encodeURIComponent(editingCertificateId)}`, {
+ const response = await apiRequest(`/certificates/${encodeURIComponent(editingCertificateId)}`, {
  method: 'PUT',
  body: JSON.stringify({
  name,
@@ -739,10 +797,13 @@
  verified: true
  })
  });
- showBanner('success', 'Certificate updated successfully.');
+ upsertCertificateInCache(response.certificate);
+ renderAll(certificateCache);
+ const durationMs = Math.round(performance.now() - startedAt);
+ showBanner('success', `Certificate updated in ${durationMs} ms.`);
  cancelEdit();
  } else {
- await apiRequest('/certificates', {
+ const response = await apiRequest('/certificates', {
  method: 'POST',
  body: JSON.stringify({
  id,
@@ -754,12 +815,17 @@
  mentorName: mentor
  })
  });
- showBanner('success', 'Certificate added successfully.');
+ upsertCertificateInCache(response.certificate);
+ renderAll(certificateCache);
+ const durationMs = Math.round(performance.now() - startedAt);
+ showBanner('success', `Certificate added in ${durationMs} ms.`);
  cancelEdit();
  }
 
- await loadCertificates();
+ scheduleBackgroundRefresh();
  } catch (error) {
+ certificateCache = previousCache;
+ renderAll(certificateCache);
  showBanner('error', error.message);
  }
  }
@@ -770,14 +836,22 @@
  return;
  }
 
+ const previousCache = certificateCache.map(item => ({ ...item }));
+ removeCertificateFromCache(id);
+ renderAll(certificateCache);
+
  try {
+ const startedAt = performance.now();
  await apiRequest(`/certificates/${encodeURIComponent(id)}`, { method: 'DELETE' });
  if (editingCertificateId === id) {
  cancelEdit();
  }
- showBanner('success', `Certificate ${id} deleted.`);
- await loadCertificates();
+ const durationMs = Math.round(performance.now() - startedAt);
+ showBanner('success', `Certificate ${id} deleted in ${durationMs} ms.`);
+ scheduleBackgroundRefresh();
  } catch (error) {
+ certificateCache = previousCache;
+ renderAll(certificateCache);
  showBanner('error', error.message);
  }
  }
@@ -882,12 +956,7 @@
  try {
  const certificates = await fetchCertificates();
  certificateCache = certificates;
- renderStats(certificates);
- renderTable(certificates);
- renderBackupPreview(certificates);
-
- const payload = buildBackupPayload(certificates);
- exportBackupText = JSON.stringify(payload, null, 4);
+ renderAll(certificateCache);
  } catch (error) {
  console.error('Failed to load certificates:', error);
  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#ef4444">Error: ${String(error.message || error)}</td></tr>`;

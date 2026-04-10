@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+mongoose.set('debug', false);
+
 let cachedConnection = null;
 
 async function connectDB() {
@@ -17,8 +19,10 @@ async function connectDB() {
  cachedConnection = await mongoose.connect(mongoUri, {
  dbName,
  maxPoolSize: 10,
- serverSelectionTimeoutMS: 5000,
- connectTimeoutMS: 10000
+ minPoolSize: 2,
+ serverSelectionTimeoutMS: 3000,
+ socketTimeoutMS: 5000,
+ compressors: 'zlib'
  });
 
  console.log(`MongoDB connected: ${cachedConnection.connection.name}`);
