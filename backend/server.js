@@ -11,6 +11,7 @@ const mongoose = require('mongoose');
 
 const connectDB = require('./config/db');
 const Admin = require('./models/Admin');
+const adminRoutes = require('./routes/admin');
 const authRoutes = require('./routes/auth');
 const certificateRoutes = require('./routes/certificates');
 
@@ -253,6 +254,7 @@ app.get('/api/debug/status', async (_req, res, next) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/certificates', certificateRoutes);
 
 app.use((req, res) => {

@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Admin Settings - Skillvance</title>
+ <link rel="icon" href="/assets/favicon.png" type="image/png">
+ <style>
+ @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+ :root {
+ --bg-main: #060917;
+ --bg-card: #10162a;
+ --bg-card-soft: #131b34;
+ --text-main: #edf2ff;
+ --text-muted: #b5c0df;
+ --line: rgba(169, 183, 226, 0.16);
+ --accent: #7c3aed;
+ --accent-cyan: #06b6d4;
+ --ok: #22c55e;
+ --danger: #ef4444;
+ }
+
+ * { box-sizing: border-box; }
+ html, body { margin: 0; padding: 0; }
+ body {
+ font-family: 'DM Sans', sans-serif;
+ background: radial-gradient(circle at top right, #1a1f3f 0%, #090d1f 46%, #060917 100%);
+ color: var(--text-main);
+ min-height: 100vh;
+ }
+
+ .topbar {
+ position: sticky;
+ top: 0;
+ z-index: 10;
+ display: flex;
+ align-items: center;
+ justify-content: space-between;
+ gap: 12px;
+ padding: 14px 16px;
+ background: rgba(6, 9, 23, 0.84);
+ backdrop-filter: blur(10px);
+ border-bottom: 1px solid var(--line);
+ }
+
+ .brand {
+ display: flex;
+ align-items: center;
+ gap: 10px;
+ min-width: 0;
+ }
+
+ .brand-dot {
+ width: 10px;
+ height: 10px;
+ border-radius: 999px;
+ background: linear-gradient(145deg, #8b5cf6, #06b6d4);
+ box-shadow: 0 0 14px rgba(124, 58, 237, 0.7);
+ }
+
+ .brand-title { font-weight: 700; }
+ .brand-subtitle { color: var(--text-muted); font-size: 13px; }
+
+ .page {
+ max-width: 1180px;
+ margin: 0 auto;
+ padding: 18px 16px 36px;
+ }
+
+ .hero {
+ margin-bottom: 18px;
+ }
+
+ .hero h1 {
+ margin: 0 0 8px;
+ font-size: clamp(28px, 4vw, 42px);
+ }
+
+ .hero p {
+ margin: 0;
+ color: var(--text-muted);
+ max-width: 760px;
+ }
+
+ .grid {
+ display: grid;
+ gap: 16px;
+ grid-template-columns: repeat(2, minmax(0, 1fr));
+ }
+
+ .panel {
+ background: rgba(16, 22, 42, 0.94);
+ border: 1px solid var(--line);
+ border-radius: 18px;
+ padding: 18px;
+ box-shadow: 0 22px 64px rgba(0, 0, 0, 0.26);
+ }
+
+ .panel h2 {
+ margin: 0 0 6px;
+ font-size: 20px;
+ }
+
+ .panel p.subtle {
+ margin: 0 0 14px;
+ color: var(--text-muted);
+ font-size: 14px;
+ }
+
+ .form-grid {
+ display: grid;
+ gap: 12px;
+ }
+
+ label {
+ display: block;
+ margin-bottom: 6px;
+ font-weight: 600;
+ }
+
+ .field-hint {
+ margin-top: 6px;
+ font-size: 12px;
+ color: var(--text-muted);
+ }
+
+ input {
+ width: 100%;
+ min-height: 46px;
+ padding: 12px 14px;
+ border-radius: 12px;
+ border: 1px solid var(--line);
+ background: var(--bg-card-soft);
+ color: var(--text-main);
+ font: inherit;
+ }
+
+ input:focus {
+ outline: none;
+ border-color: var(--accent);
+ box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.22);
+ }
+
+ .btn-row {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 10px;
+ margin-top: 14px;
+ }
+
+ button {
+ border: none;
+ min-height: 44px;
+ padding: 0 16px;
+ border-radius: 12px;
+ cursor: pointer;
+ font-weight: 700;
+ color: white;
+ background: linear-gradient(140deg, #7c3aed, #0ea5e9);
+ }
+
+ .secondary-btn {
+ background: rgba(148, 163, 184, 0.18);
+ border: 1px solid rgba(148, 163, 184, 0.35);
+ }
+
+ .banner {
+ display: none;
+ margin-bottom: 16px;
+ padding: 12px 14px;
+ border-radius: 12px;
+ border: 1px solid transparent;
+ }
+
+ .banner.visible { display: block; }
+ .banner.success { background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.4); color: #bbf7d0; }
+ .banner.error { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.4); color: #fecaca; }
+
+ .list {
+ display: grid;
+ gap: 10px;
+ }
+
+ .list-item {
+ display: flex;
+ justify-content: space-between;
+ gap: 10px;
+ padding: 12px 14px;
+ border: 1px solid var(--line);
+ border-radius: 12px;
+ background: rgba(19, 27, 52, 0.7);
+ }
+
+ .list-item strong { display: block; margin-bottom: 2px; }
+ .list-item span { color: var(--text-muted); font-size: 13px; }
+
+ .top-actions {
+ display: flex;
+ gap: 10px;
+ align-items: center;
+ }
+
+ @media (max-width: 920px) {
+ .grid { grid-template-columns: 1fr; }
+ }
+
+ @media (max-width: 640px) {
+ .topbar { align-items: flex-start; flex-direction: column; }
+ .top-actions { width: 100%; flex-wrap: wrap; }
+ }
+ </style>
+</head>
+<body>
+ <header class="topbar">
+ <div class="brand">
+ <span class="brand-dot"></span>
+ <div>
+ <div class="brand-title">Skillvance Admin Settings</div>
+ <div class="brand-subtitle">Change password and create new admin accounts</div>
+ </div>
+ </div>
+ <div class="top-actions">
+ <button type="button" class="secondary-btn" onclick="window.location.href='/admin-certs'">Back to Certificates</button>
+ <button type="button" class="secondary-btn" onclick="logout()">Logout</button>
+ </div>
+ </header>
+
+ <main class="page">
+ <div id="banner" class="banner" role="alert" aria-live="polite"><span id="bannerText"></span></div>
+
+ <section class="hero">
+ <h1>Admin Settings</h1>
+ <p>Use this page to update your own password or create a new admin account for another team member.</p>
+ </section>
+
+ <div class="grid">
+ <section class="panel">
+ <h2>Change Password</h2>
+ <p class="subtle">This changes the password for the currently logged-in admin account.</p>
+ <div class="form-grid">
+ <div>
+ <label for="currentPassword">Current Password</label>
+ <input type="password" id="currentPassword" autocomplete="current-password" placeholder="Current password">
+ </div>
+ <div>
+ <label for="newPassword">New Password</label>
+ <input type="password" id="newPassword" autocomplete="new-password" placeholder="New password">
+ <div class="field-hint">Minimum 8 characters.</div>
+ </div>
+ <div>
+ <label for="confirmPassword">Confirm New Password</label>
+ <input type="password" id="confirmPassword" autocomplete="new-password" placeholder="Confirm new password">
+ </div>
+ </div>
+ <div class="btn-row">
+ <button type="button" onclick="changePassword()">Update Password</button>
+ </div>
+ </section>
+
+ <section class="panel">
+ <h2>Create New Admin</h2>
+ <p class="subtle">Creates a new admin account with access to the admin area.</p>
+ <div class="form-grid">
+ <div>
+ <label for="adminUsername">Username</label>
+ <input type="text" id="adminUsername" autocomplete="username" placeholder="new.admin">
+ <div class="field-hint">Use lowercase letters, numbers, dots, underscores, and hyphens.</div>
+ </div>
+ <div>
+ <label for="adminEmail">Email</label>
+ <input type="email" id="adminEmail" autocomplete="email" placeholder="new.admin@example.com">
+ </div>
+ <div>
+ <label for="adminPassword">Password</label>
+ <input type="password" id="adminPassword" autocomplete="new-password" placeholder="Strong password">
+ </div>
+ </div>
+ <div class="btn-row">
+ <button type="button" onclick="createAdmin()">Create Admin</button>
+ </div>
+ </section>
+ </div>
+
+ <section class="panel" style="margin-top:16px">
+ <h2>Current Session</h2>
+ <p class="subtle">Loaded from your verified session token.</p>
+ <div class="list">
+ <div class="list-item">
+ <div>
+ <strong>Logged-in Admin</strong>
+ <span id="sessionUser">Loading...</span>
+ </div>
+ <div id="sessionRole" style="color:var(--text-muted)">-</div>
+ </div>
+ </div>
+ </section>
+ </main>
+
+ <script>
+ function resolveApiBaseUrl() {
+ const host = window.location.hostname;
+ const isLocalHost = host === 'localhost' || host === '127.0.0.1';
+ const isFileProtocol = window.location.protocol === 'file:';
+
+ if (isFileProtocol || (isLocalHost && window.location.port !== '5000')) {
+ return 'http://localhost:5000/api';
+ }
+
+ return '/api';
+ }
+
+ const API_BASE_URL = resolveApiBaseUrl();
+ let bannerTimer = null;
+
+ function showBanner(type, text, timeoutMs = 5000) {
+ const banner = document.getElementById('banner');
+ const bannerText = document.getElementById('bannerText');
+ banner.className = `banner visible ${type === 'success' ? 'success' : 'error'}`;
+ bannerText.textContent = text;
+
+ if (bannerTimer) {
+ clearTimeout(bannerTimer);
+ }
+
+ bannerTimer = setTimeout(() => {
+ banner.classList.remove('visible');
+ }, timeoutMs);
+ }
+
+ async function safeJson(response) {
+ const contentType = response.headers.get('content-type') || '';
+ if (!contentType.includes('application/json')) {
+ return null;
+ }
+
+ try {
+ return await response.json();
+ } catch (_error) {
+ return null;
+ }
+ }
+
+ async function apiRequest(path, options = {}) {
+ const hasBody = options.body !== undefined;
+ const response = await fetch(`${API_BASE_URL}${path}`, {
+ ...options,
+ credentials: 'include',
+ headers: {
+ ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+ ...(options.headers || {})
+ }
+ });
+
+ const data = await safeJson(response);
+ if (!response.ok) {
+ throw new Error(data?.message || `Request failed with status ${response.status}`);
+ }
+
+ return data;
+ }
+
+ async function loadSession() {
+ try {
+ const data = await apiRequest('/auth/verify', { method: 'GET' });
+ document.getElementById('sessionUser').textContent = data?.user?.username || 'Unknown';
+ document.getElementById('sessionRole').textContent = data?.user?.role || '-';
+ } catch (error) {
+ window.location.href = '/admin-login';
+ }
+ }
+
+ async function changePassword() {
+ const currentPassword = document.getElementById('currentPassword').value.trim();
+ const newPassword = document.getElementById('newPassword').value.trim();
+ const confirmPassword = document.getElementById('confirmPassword').value.trim();
+
+ if (!currentPassword || !newPassword || !confirmPassword) {
+ showBanner('error', 'Please fill all password fields.');
+ return;
+ }
+
+ try {
+ const response = await apiRequest('/admin/settings/password', {
+ method: 'POST',
+ body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
+ });
+
+ showBanner('success', response.message || 'Password updated successfully.');
+ document.getElementById('currentPassword').value = '';
+ document.getElementById('newPassword').value = '';
+ document.getElementById('confirmPassword').value = '';
+ } catch (error) {
+ showBanner('error', error.message);
+ }
+ }
+
+ async function createAdmin() {
+ const username = document.getElementById('adminUsername').value.trim();
+ const email = document.getElementById('adminEmail').value.trim();
+ const password = document.getElementById('adminPassword').value.trim();
+
+ if (!username || !email || !password) {
+ showBanner('error', 'Please fill all admin fields.');
+ return;
+ }
+
+ try {
+ const response = await apiRequest('/admin/settings/admins', {
+ method: 'POST',
+ body: JSON.stringify({ username, email, password })
+ });
+
+ showBanner('success', response.message || 'Admin account created successfully.');
+ document.getElementById('adminUsername').value = '';
+ document.getElementById('adminEmail').value = '';
+ document.getElementById('adminPassword').value = '';
+ } catch (error) {
+ showBanner('error', error.message);
+ }
+ }
+
+ async function logout() {
+ try {
+ await apiRequest('/auth/logout', { method: 'POST' });
+ } catch (_error) {
+ }
+ window.location.href = '/admin-login';
+ }
+
+ (async function init() {
+ await loadSession();
+ })();
+ </script>
+</body>
+</html>
