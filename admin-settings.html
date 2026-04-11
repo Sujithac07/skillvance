@@ -567,8 +567,32 @@
  email: String(historyItem?.email || '').trim(),
  ipAddress: String(historyItem?.ipAddress || '').trim(),
  userAgent: String(historyItem?.userAgent || '').trim(),
+ browser: String(historyItem?.browser || '').trim(),
+ browserVersion: String(historyItem?.browserVersion || '').trim(),
+ os: String(historyItem?.os || '').trim(),
+ osVersion: String(historyItem?.osVersion || '').trim(),
+ deviceType: String(historyItem?.deviceType || '').trim(),
+ deviceVendor: String(historyItem?.deviceVendor || '').trim(),
+ deviceModel: String(historyItem?.deviceModel || '').trim(),
+ source: String(historyItem?.source || '').trim(),
  createdAt: historyItem?.createdAt
  };
+ }
+
+ function formatDeviceDetails(item) {
+ const type = item.deviceType || 'unknown';
+ const vendorModel = [item.deviceVendor, item.deviceModel].filter(Boolean).join(' ').trim();
+ return vendorModel ? `${type} (${vendorModel})` : type;
+ }
+
+ function formatBrowserDetails(item) {
+ const browser = item.browser || 'Unknown';
+ return item.browserVersion ? `${browser} ${item.browserVersion}` : browser;
+ }
+
+ function formatOsDetails(item) {
+ const os = item.os || 'Unknown';
+ return item.osVersion ? `${os} ${item.osVersion}` : os;
  }
 
  function clearAccountForm() {
@@ -657,6 +681,10 @@
  <div class="history-item">
  <strong>${escapeHtml(formatDateTime(item.createdAt))}</strong>
  <span>IP: ${escapeHtml(item.ipAddress || 'Unknown')}</span>
+ <span>OS: ${escapeHtml(formatOsDetails(item))}</span>
+ <span>Device: ${escapeHtml(formatDeviceDetails(item))}</span>
+ <span>Browser: ${escapeHtml(formatBrowserDetails(item))}</span>
+ <span>Source: ${escapeHtml(item.source || 'unknown')}</span>
  <span>User Agent: ${escapeHtml(item.userAgent || 'Unknown')}</span>
  </div>
  `).join('');

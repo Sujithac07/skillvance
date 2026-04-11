@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const Admin = require('../models/Admin');
 const AdminLoginHistory = require('../models/AdminLoginHistory');
 const { verifyToken, getJwtSecret } = require('../middleware/auth');
+const { buildLoginClientInfo } = require('../utils/client-info');
 
 const router = express.Router();
 
@@ -37,15 +38,6 @@ function buildAuthCookieOptions() {
 
 function getAuthCookieName() {
  return process.env.AUTH_COOKIE_NAME || 'skillvance_admin_token';
-}
-
-function getClientIp(req) {
- const forwarded = req.headers['x-forwarded-for'];
- if (typeof forwarded === 'string' && forwarded.length > 0) {
- return forwarded.split(',')[0].trim();
- }
-
- return req.socket?.remoteAddress || req.ip || 'unknown';
 }
 
 router.post('/login', loginLimiter, async (req, res, next) => {
@@ -101,8 +93,7 @@ router.post('/login', loginLimiter, async (req, res, next) => {
  adminId: admin._id,
  username: admin.username,
  email: admin.email,
- ipAddress: getClientIp(req),
- userAgent: String(req.get('user-agent') || '')
+ ...buildLoginClientInfo(req)
  }).catch(historyError => {
  console.error('[AUTH] Failed to store login history:', historyError);
  });

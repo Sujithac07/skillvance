@@ -27,6 +27,38 @@ const adminLoginHistorySchema = new mongoose.Schema(
  userAgent: {
  type: String,
  trim: true
+ },
+ browser: {
+ type: String,
+ trim: true
+ },
+ browserVersion: {
+ type: String,
+ trim: true
+ },
+ os: {
+ type: String,
+ trim: true
+ },
+ osVersion: {
+ type: String,
+ trim: true
+ },
+ deviceType: {
+ type: String,
+ trim: true
+ },
+ deviceVendor: {
+ type: String,
+ trim: true
+ },
+ deviceModel: {
+ type: String,
+ trim: true
+ },
+ source: {
+ type: String,
+ trim: true
  }
  },
  {

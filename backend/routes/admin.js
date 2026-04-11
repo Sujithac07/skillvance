@@ -124,6 +124,14 @@ router.get('/settings/admins/:adminId/login-history', verifyToken, isAdmin, asyn
  email: item.email,
  ipAddress: item.ipAddress,
  userAgent: item.userAgent,
+ browser: item.browser,
+ browserVersion: item.browserVersion,
+ os: item.os,
+ osVersion: item.osVersion,
+ deviceType: item.deviceType,
+ deviceVendor: item.deviceVendor,
+ deviceModel: item.deviceModel,
+ source: item.source,
  createdAt: item.createdAt
  }))
  });
