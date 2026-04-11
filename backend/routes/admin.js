@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 
 const Admin = require('../models/Admin');
+const AdminLoginHistory = require('../models/AdminLoginHistory');
 const { verifyToken, isAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -40,6 +41,96 @@ function validateUsername(username) {
 
  return null;
 }
+
+function toAccountResponse(admin, summary = {}) {
+ return {
+ id: admin._id,
+ username: admin.username,
+ email: admin.email,
+ role: admin.role,
+ createdAt: admin.createdAt,
+ updatedAt: admin.updatedAt,
+ loginCount: summary.loginCount || 0,
+ lastLoginAt: summary.lastLoginAt || null
+ };
+}
+
+async function loadLoginSummaries(adminIds) {
+ if (!adminIds.length) {
+ return new Map();
+ }
+
+ const summaries = await AdminLoginHistory.aggregate([
+  {
+   $match: {
+    adminId: { $in: adminIds }
+   }
+  },
+  {
+   $sort: { createdAt: -1 }
+  },
+  {
+   $group: {
+    _id: '$adminId',
+    loginCount: { $sum: 1 },
+    lastLoginAt: { $first: '$createdAt' }
+   }
+  }
+ ]);
+
+ return new Map(summaries.map(item => [String(item._id), item]));
+}
+
+router.get('/settings/admins', verifyToken, isAdmin, async (_req, res, next) => {
+ try {
+ const admins = await Admin.find({})
+ .select('username email role createdAt updatedAt')
+ .sort({ createdAt: -1 })
+ .lean();
+
+ const summaries = await loadLoginSummaries(admins.map(admin => admin._id));
+
+ return res.json({
+ admins: admins.map(admin => toAccountResponse(admin, summaries.get(String(admin._id)))),
+ total: admins.length
+ });
+ } catch (error) {
+ return next(error);
+ }
+});
+
+router.get('/settings/admins/:adminId/login-history', verifyToken, isAdmin, async (req, res, next) => {
+ try {
+ const adminId = String(req.params.adminId || '').trim();
+ if (!adminId) {
+ return res.status(400).json({ message: 'Admin ID is required.' });
+ }
+
+ const admin = await Admin.findById(adminId).select('username email role createdAt updatedAt').lean();
+ if (!admin) {
+ return res.status(404).json({ message: 'Admin account not found.' });
+ }
+
+ const history = await AdminLoginHistory.find({ adminId })
+ .sort({ createdAt: -1 })
+ .limit(25)
+ .lean();
+
+ return res.json({
+ admin: toAccountResponse(admin),
+ history: history.map(item => ({
+ id: item._id,
+ username: item.username,
+ email: item.email,
+ ipAddress: item.ipAddress,
+ userAgent: item.userAgent,
+ createdAt: item.createdAt
+ }))
+ });
+ } catch (error) {
+ return next(error);
+ }
+});
 
 router.post('/settings/password', verifyToken, isAdmin, async (req, res, next) => {
  try {
@@ -120,18 +211,130 @@ router.post('/settings/admins', verifyToken, isAdmin, async (req, res, next) => 
 
  return res.status(201).json({
  message: 'Admin account created successfully.',
- admin: {
- id: createdAdmin._id,
- username: createdAdmin.username,
- email: createdAdmin.email,
- role: createdAdmin.role
- }
+ admin: toAccountResponse(createdAdmin)
  });
  } catch (error) {
  if (error.code === 11000) {
  return res.status(409).json({ message: 'An admin with that username or email already exists.' });
  }
 
+ return next(error);
+ }
+});
+
+router.put('/settings/admins/:adminId', verifyToken, isAdmin, async (req, res, next) => {
+ try {
+ const adminId = String(req.params.adminId || '').trim();
+ if (!adminId) {
+ return res.status(400).json({ message: 'Admin ID is required.' });
+ }
+
+ const updates = {};
+ if (req.body?.username !== undefined) {
+ updates.username = normalizeUsername(req.body.username);
+ const usernameError = validateUsername(updates.username);
+ if (usernameError) {
+ return res.status(400).json({ message: usernameError });
+ }
+ }
+
+ if (req.body?.email !== undefined) {
+ updates.email = normalizeText(req.body.email).toLowerCase();
+ if (!isValidEmail(updates.email)) {
+ return res.status(400).json({ message: 'Please provide a valid email address.' });
+ }
+ }
+
+ if (req.body?.password !== undefined && String(req.body.password).trim()) {
+ const password = String(req.body.password || '');
+ const passwordError = validatePasswordStrength(password);
+ if (passwordError) {
+ return res.status(400).json({ message: passwordError });
+ }
+
+ updates.password = password;
+ }
+
+ if (!Object.keys(updates).length) {
+ return res.status(400).json({ message: 'Provide at least one field to update.' });
+ }
+
+ const duplicateQuery = [];
+ if (updates.username) {
+ duplicateQuery.push({ username: updates.username });
+ }
+ if (updates.email) {
+ duplicateQuery.push({ email: updates.email });
+ }
+
+ if (duplicateQuery.length) {
+ const duplicateAdmin = await Admin.findOne({
+ _id: { $ne: adminId },
+ $or: duplicateQuery
+ }).lean();
+
+ if (duplicateAdmin) {
+ return res.status(409).json({ message: 'Another admin already uses that username or email.' });
+ }
+ }
+
+ const admin = await Admin.findById(adminId).select('+password');
+ if (!admin) {
+ return res.status(404).json({ message: 'Admin account not found.' });
+ }
+
+ if (updates.username) {
+ admin.username = updates.username;
+ }
+
+ if (updates.email) {
+ admin.email = updates.email;
+ }
+
+ if (updates.password) {
+ admin.password = updates.password;
+ }
+
+ await admin.save();
+
+ return res.json({
+ message: 'Admin account updated successfully.',
+ admin: toAccountResponse(admin)
+ });
+ } catch (error) {
+ if (error.code === 11000) {
+ return res.status(409).json({ message: 'Another admin already uses that username or email.' });
+ }
+
+ return next(error);
+ }
+});
+
+router.delete('/settings/admins/:adminId', verifyToken, isAdmin, async (req, res, next) => {
+ try {
+ const adminId = String(req.params.adminId || '').trim();
+ if (!adminId) {
+ return res.status(400).json({ message: 'Admin ID is required.' });
+ }
+
+ if (String(req.user.sub) === adminId) {
+ return res.status(400).json({ message: 'You cannot delete your own account while signed in.' });
+ }
+
+ const adminCount = await Admin.countDocuments();
+ if (adminCount <= 1) {
+ return res.status(400).json({ message: 'At least one admin account must remain.' });
+ }
+
+ const deleted = await Admin.findByIdAndDelete(adminId);
+ if (!deleted) {
+ return res.status(404).json({ message: 'Admin account not found.' });
+ }
+
+ await AdminLoginHistory.deleteMany({ adminId });
+
+ return res.json({ message: 'Admin account deleted successfully.' });
+ } catch (error) {
  return next(error);
  }
 });

@@ -18,6 +18,7 @@
  --accent: #7c3aed;
  --accent-cyan: #06b6d4;
  --ok: #22c55e;
+ --warn: #f59e0b;
  --danger: #ef4444;
  }
 
@@ -33,7 +34,7 @@
  .topbar {
  position: sticky;
  top: 0;
- z-index: 10;
+ z-index: 20;
  display: flex;
  align-items: center;
  justify-content: space-between;
@@ -63,7 +64,7 @@
  .brand-subtitle { color: var(--text-muted); font-size: 13px; }
 
  .page {
- max-width: 1180px;
+ max-width: 1380px;
  margin: 0 auto;
  padding: 18px 16px 36px;
  }
@@ -80,7 +81,7 @@
  .hero p {
  margin: 0;
  color: var(--text-muted);
- max-width: 760px;
+ max-width: 900px;
  }
 
  .grid {
@@ -125,7 +126,7 @@
  color: var(--text-muted);
  }
 
- input {
+ input, textarea {
  width: 100%;
  min-height: 46px;
  padding: 12px 14px;
@@ -136,7 +137,12 @@
  font: inherit;
  }
 
- input:focus {
+ textarea {
+ min-height: 110px;
+ resize: vertical;
+ }
+
+ input:focus, textarea:focus {
  outline: none;
  border-color: var(--accent);
  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.22);
@@ -163,6 +169,18 @@
  .secondary-btn {
  background: rgba(148, 163, 184, 0.18);
  border: 1px solid rgba(148, 163, 184, 0.35);
+ }
+
+ .danger-btn {
+ background: rgba(239, 68, 68, 0.16);
+ border: 1px solid rgba(239, 68, 68, 0.35);
+ color: #fecaca;
+ }
+
+ .ghost-btn {
+ background: transparent;
+ border: 1px solid var(--line);
+ color: var(--text-main);
  }
 
  .banner {
@@ -195,13 +213,101 @@
  .list-item strong { display: block; margin-bottom: 2px; }
  .list-item span { color: var(--text-muted); font-size: 13px; }
 
+ .meta-row {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 10px;
+ margin-top: 10px;
+ }
+
+ .pill {
+ display: inline-flex;
+ align-items: center;
+ gap: 6px;
+ padding: 6px 10px;
+ border-radius: 999px;
+ font-size: 12px;
+ background: rgba(124, 58, 237, 0.12);
+ color: #ddd6fe;
+ border: 1px solid rgba(124, 58, 237, 0.26);
+ }
+
+ .pill.ok {
+ background: rgba(34, 197, 94, 0.12);
+ color: #bbf7d0;
+ border-color: rgba(34, 197, 94, 0.26);
+ }
+
+ .pill.warn {
+ background: rgba(245, 158, 11, 0.12);
+ color: #fde68a;
+ border-color: rgba(245, 158, 11, 0.26);
+ }
+
+ .table-wrap {
+ overflow: auto;
+ border: 1px solid var(--line);
+ border-radius: 14px;
+ }
+
+ table {
+ width: 100%;
+ border-collapse: collapse;
+ min-width: 900px;
+ }
+
+ th, td {
+ padding: 11px;
+ border-bottom: 1px solid var(--line);
+ text-align: left;
+ font-size: 14px;
+ vertical-align: top;
+ }
+
+ th { color: #c7d2fe; background: rgba(124, 58, 237, 0.15); }
+ tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+
+ .account-row.selected {
+ outline: 2px solid rgba(124, 58, 237, 0.55);
+ background: rgba(124, 58, 237, 0.1);
+ }
+
+ .id-cell {
+ font-family: 'DM Mono', monospace;
+ font-size: 13px;
+ }
+
+ .history-list {
+ display: grid;
+ gap: 10px;
+ }
+
+ .history-item {
+ border: 1px solid var(--line);
+ border-radius: 12px;
+ padding: 12px 14px;
+ background: rgba(19, 27, 52, 0.7);
+ }
+
+ .history-item strong { display: block; margin-bottom: 4px; }
+ .history-item span { display: block; color: var(--text-muted); font-size: 13px; }
+
+ .section-head {
+ display: flex;
+ align-items: center;
+ justify-content: space-between;
+ gap: 10px;
+ flex-wrap: wrap;
+ margin-bottom: 10px;
+ }
+
  .top-actions {
  display: flex;
  gap: 10px;
  align-items: center;
  }
 
- @media (max-width: 920px) {
+ @media (max-width: 1100px) {
  .grid { grid-template-columns: 1fr; }
  }
 
@@ -217,7 +323,7 @@
  <span class="brand-dot"></span>
  <div>
  <div class="brand-title">Skillvance Admin Settings</div>
- <div class="brand-subtitle">Change password and create new admin accounts</div>
+ <div class="brand-subtitle">Manage admins, password, account history</div>
  </div>
  </div>
  <div class="top-actions">
@@ -231,7 +337,7 @@
 
  <section class="hero">
  <h1>Admin Settings</h1>
- <p>Use this page to update your own password or create a new admin account for another team member.</p>
+ <p>Change the current password, create or update admin accounts, delete accounts you no longer need, and inspect previous login history for any account.</p>
  </section>
 
  <div class="grid">
@@ -259,8 +365,8 @@
  </section>
 
  <section class="panel">
- <h2>Create New Admin</h2>
- <p class="subtle">Creates a new admin account with access to the admin area.</p>
+ <h2 id="accountFormTitle">Create New Admin</h2>
+ <p class="subtle" id="accountFormSubtitle">Create a new admin account or edit the selected account from the table below.</p>
  <div class="form-grid">
  <div>
  <label for="adminUsername">Username</label>
@@ -274,27 +380,79 @@
  <div>
  <label for="adminPassword">Password</label>
  <input type="password" id="adminPassword" autocomplete="new-password" placeholder="Strong password">
+ <div class="field-hint" id="adminPasswordHint">Leave password empty when updating an existing account if you do not want to change it.</div>
  </div>
  </div>
  <div class="btn-row">
- <button type="button" onclick="createAdmin()">Create Admin</button>
+ <button type="button" id="accountSubmitBtn" onclick="saveAccount()">Create Admin</button>
+ <button type="button" class="secondary-btn" id="cancelAccountEditBtn" style="display:none" onclick="cancelAccountEdit()">Cancel Edit</button>
  </div>
  </section>
  </div>
 
  <section class="panel" style="margin-top:16px">
- <h2>Current Session</h2>
- <p class="subtle">Loaded from your verified session token.</p>
- <div class="list">
+ <div class="section-head">
+ <div>
+ <h2>Available Admin Accounts</h2>
+ <p class="subtle">Select an account to view its previous login history or edit/delete it.</p>
+ </div>
+ <div class="meta-row">
+ <span class="pill ok" id="accountsCountPill">0 accounts</span>
+ <span class="pill" id="selectedAdminPill">No account selected</span>
+ </div>
+ </div>
+ <div class="table-wrap">
+ <table>
+ <thead>
+ <tr>
+ <th>Username</th>
+ <th>Email</th>
+ <th>Role</th>
+ <th>Logins</th>
+ <th>Last Login</th>
+ <th>Created</th>
+ <th>Actions</th>
+ </tr>
+ </thead>
+ <tbody id="accountsBody"></tbody>
+ </table>
+ </div>
+ </section>
+
+ <div class="grid" style="margin-top:16px">
+ <section class="panel">
+ <div class="section-head">
+ <div>
+ <h2>Selected Account</h2>
+ <p class="subtle">Shows the currently selected admin account and summary data.</p>
+ </div>
+ </div>
+ <div class="list" id="selectedAccountList">
  <div class="list-item">
  <div>
- <strong>Logged-in Admin</strong>
- <span id="sessionUser">Loading...</span>
+ <strong>No account selected</strong>
+ <span>Select an account from the list above.</span>
  </div>
- <div id="sessionRole" style="color:var(--text-muted)">-</div>
  </div>
  </div>
  </section>
+
+ <section class="panel">
+ <div class="section-head">
+ <div>
+ <h2>Login History</h2>
+ <p class="subtle">Recent login history for the selected account.</p>
+ </div>
+ <button type="button" class="secondary-btn" onclick="reloadSelectedHistory()">Refresh History</button>
+ </div>
+ <div class="history-list" id="historyList">
+ <div class="history-item">
+ <strong>No account selected</strong>
+ <span>Select an account to view login history.</span>
+ </div>
+ </div>
+ </section>
+ </div>
  </main>
 
  <script>
@@ -312,6 +470,10 @@
 
  const API_BASE_URL = resolveApiBaseUrl();
  let bannerTimer = null;
+ let sessionAdminId = null;
+ let selectedAdminId = null;
+ let adminCache = [];
+ let historyCache = [];
 
  function showBanner(type, text, timeoutMs = 5000) {
  const banner = document.getElementById('banner');
@@ -360,13 +522,318 @@
  return data;
  }
 
+ function escapeHtml(value) {
+ return String(value ?? '').replace(/[&<>"']/g, character => ({
+ '&': '&amp;',
+ '<': '&lt;',
+ '>': '&gt;',
+ '"': '&quot;',
+ "'": '&#39;'
+ }[character]));
+ }
+
+ function formatDateTime(value) {
+ if (!value) {
+ return 'Never';
+ }
+
+ const date = new Date(value);
+ if (Number.isNaN(date.getTime())) {
+ return 'Invalid date';
+ }
+
+ return date.toLocaleString();
+ }
+
+ function normalizeAccount(account) {
+ return {
+ id: String(account?.id || account?._id || '').trim(),
+ username: String(account?.username || '').trim(),
+ email: String(account?.email || '').trim(),
+ role: String(account?.role || 'admin').trim(),
+ createdAt: account?.createdAt,
+ updatedAt: account?.updatedAt,
+ loginCount: Number(account?.loginCount || 0),
+ lastLoginAt: account?.lastLoginAt || null
+ };
+ }
+
+ function normalizeHistory(historyItem) {
+ return {
+ id: String(historyItem?.id || historyItem?._id || '').trim(),
+ username: String(historyItem?.username || '').trim(),
+ email: String(historyItem?.email || '').trim(),
+ ipAddress: String(historyItem?.ipAddress || '').trim(),
+ userAgent: String(historyItem?.userAgent || '').trim(),
+ createdAt: historyItem?.createdAt
+ };
+ }
+
+ function clearAccountForm() {
+ selectedAdminId = null;
+ document.getElementById('accountFormTitle').textContent = 'Create New Admin';
+ document.getElementById('accountFormSubtitle').textContent = 'Create a new admin account or edit the selected account from the table below.';
+ document.getElementById('accountSubmitBtn').textContent = 'Create Admin';
+ document.getElementById('cancelAccountEditBtn').style.display = 'none';
+ document.getElementById('adminPasswordHint').textContent = 'Leave password empty when updating an existing account if you do not want to change it.';
+ document.getElementById('adminUsername').value = '';
+ document.getElementById('adminEmail').value = '';
+ document.getElementById('adminPassword').value = '';
+ document.getElementById('selectedAdminPill').textContent = 'No account selected';
+ renderSelectedAccount(null);
+ renderHistory([]);
+ renderAccounts(adminCache);
+}
+
+ function setAccountForm(account) {
+ selectedAdminId = account.id;
+ document.getElementById('accountFormTitle').textContent = `Edit Admin ${account.username}`;
+ document.getElementById('accountFormSubtitle').textContent = 'Update username, email, or password for the selected account.';
+ document.getElementById('accountSubmitBtn').textContent = 'Update Admin';
+ document.getElementById('cancelAccountEditBtn').style.display = 'inline-flex';
+ document.getElementById('adminPasswordHint').textContent = 'Password is optional when editing an admin account.';
+ document.getElementById('adminUsername').value = account.username || '';
+ document.getElementById('adminEmail').value = account.email || '';
+ document.getElementById('adminPassword').value = '';
+ document.getElementById('selectedAdminPill').textContent = `Selected: ${account.username}`;
+ renderSelectedAccount(account);
+ renderAccounts(adminCache);
+ }
+
+ function renderSelectedAccount(account) {
+ const container = document.getElementById('selectedAccountList');
+ if (!account) {
+ container.innerHTML = `
+ <div class="list-item">
+ <div>
+ <strong>No account selected</strong>
+ <span>Select an account from the list above.</span>
+ </div>
+ </div>
+ `;
+ return;
+ }
+
+ container.innerHTML = `
+ <div class="list-item">
+ <div>
+ <strong>${escapeHtml(account.username)}</strong>
+ <span>${escapeHtml(account.email)}</span>
+ </div>
+ <div style="color: var(--text-muted)">${escapeHtml(account.role)}</div>
+ </div>
+ <div class="list-item">
+ <div>
+ <strong>Login Count</strong>
+ <span>${account.loginCount}</span>
+ </div>
+ <div style="color: var(--text-muted)">${account.loginCount ? 'Recorded' : 'No logins yet'}</div>
+ </div>
+ <div class="list-item">
+ <div>
+ <strong>Last Login</strong>
+ <span>${escapeHtml(formatDateTime(account.lastLoginAt))}</span>
+ </div>
+ <div style="color: var(--text-muted)">${account.lastLoginAt ? 'Most recent' : 'Never logged in'}</div>
+ </div>
+ `;
+ }
+
+ function renderHistory(history) {
+ const container = document.getElementById('historyList');
+ if (!history.length) {
+ container.innerHTML = `
+ <div class="history-item">
+ <strong>No login history</strong>
+ <span>This account has not logged in yet.</span>
+ </div>
+ `;
+ return;
+ }
+
+ container.innerHTML = history.map(item => `
+ <div class="history-item">
+ <strong>${escapeHtml(formatDateTime(item.createdAt))}</strong>
+ <span>IP: ${escapeHtml(item.ipAddress || 'Unknown')}</span>
+ <span>User Agent: ${escapeHtml(item.userAgent || 'Unknown')}</span>
+ </div>
+ `).join('');
+ }
+
+ function renderAccounts(accounts) {
+ const tbody = document.getElementById('accountsBody');
+ document.getElementById('accountsCountPill').textContent = `${accounts.length} account${accounts.length === 1 ? '' : 's'}`;
+
+ if (!accounts.length) {
+ tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#b5c0df">No admin accounts available.</td></tr>';
+ return;
+ }
+
+ tbody.innerHTML = accounts.map(account => {
+ const selectedClass = account.id === selectedAdminId ? 'selected' : '';
+ const isCurrentUser = account.id === sessionAdminId;
+ return `
+ <tr class="account-row ${selectedClass}" data-admin-id="${escapeHtml(account.id)}">
+ <td class="id-cell" data-label="Username">${escapeHtml(account.username)}</td>
+ <td data-label="Email">${escapeHtml(account.email)}</td>
+ <td data-label="Role">${escapeHtml(account.role)}</td>
+ <td data-label="Logins">${account.loginCount}</td>
+ <td data-label="Last Login">${escapeHtml(formatDateTime(account.lastLoginAt))}</td>
+ <td data-label="Created">${escapeHtml(formatDateTime(account.createdAt))}</td>
+ <td data-label="Actions">
+ <div class="btn-row" style="margin-top:0">
+ <button type="button" class="secondary-btn" onclick="selectAdmin('${escapeHtml(account.id)}')">Edit</button>
+ <button type="button" class="secondary-btn" onclick="loadHistory('${escapeHtml(account.id)}')">History</button>
+ <button type="button" class="danger-btn" ${isCurrentUser ? 'disabled title="You cannot delete your own account while signed in."' : ''} onclick="deleteAdmin('${escapeHtml(account.id)}')">Delete</button>
+ </div>
+ </td>
+ </tr>
+ `;
+ }).join('');
+ }
+
  async function loadSession() {
- try {
  const data = await apiRequest('/auth/verify', { method: 'GET' });
- document.getElementById('sessionUser').textContent = data?.user?.username || 'Unknown';
- document.getElementById('sessionRole').textContent = data?.user?.role || '-';
+ sessionAdminId = String(data?.user?.sub || '');
+ document.title = `Admin Settings - ${data?.user?.username || 'Skillvance'}`;
+ }
+
+ async function loadAdmins() {
+ const data = await apiRequest('/admin/settings/admins', { method: 'GET' });
+ adminCache = Array.isArray(data?.admins) ? data.admins.map(normalizeAccount) : [];
+ renderAccounts(adminCache);
+
+ if (selectedAdminId) {
+ const selectedAccount = adminCache.find(item => item.id === selectedAdminId);
+ if (selectedAccount) {
+ await loadHistory(selectedAccount.id);
+ return;
+ }
+ }
+
+ const defaultAccount = adminCache.find(item => item.id === sessionAdminId) || adminCache[0] || null;
+ if (defaultAccount) {
+ setAccountForm(defaultAccount);
+ await loadHistory(defaultAccount.id);
+ } else {
+ clearAccountForm();
+ }
+ }
+
+ async function loadHistory(adminId) {
+ const targetId = String(adminId || selectedAdminId || '').trim();
+ if (!targetId) {
+ historyCache = [];
+ renderHistory(historyCache);
+ return;
+ }
+
+ const data = await apiRequest(`/admin/settings/admins/${encodeURIComponent(targetId)}/login-history`, { method: 'GET' });
+ historyCache = Array.isArray(data?.history) ? data.history.map(normalizeHistory) : [];
+ const selectedAccount = adminCache.find(item => item.id === targetId) || normalizeAccount(data?.admin);
+ setAccountForm(selectedAccount);
+ renderHistory(historyCache);
+ return historyCache;
+ }
+
+ async function reloadSelectedHistory() {
+ if (!selectedAdminId) {
+ showBanner('error', 'Select an account first.');
+ return;
+ }
+
+ try {
+ await loadHistory(selectedAdminId);
  } catch (error) {
- window.location.href = '/admin-login';
+ showBanner('error', error.message);
+ }
+ }
+
+ function selectAdmin(adminId) {
+ const account = adminCache.find(item => item.id === adminId);
+ if (!account) {
+ showBanner('error', 'Admin account not found. Refresh and try again.');
+ return;
+ }
+
+ setAccountForm(account);
+ loadHistory(account.id).catch(error => showBanner('error', error.message));
+ const row = document.querySelector(`.account-row[data-admin-id="${CSS.escape(adminId)}"]`);
+ if (row) {
+ row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+ }
+ }
+
+ async function saveAccount() {
+ const username = document.getElementById('adminUsername').value.trim();
+ const email = document.getElementById('adminEmail').value.trim();
+ const password = document.getElementById('adminPassword').value.trim();
+
+ if (!username || !email) {
+ showBanner('error', 'Username and email are required.');
+ return;
+ }
+
+ try {
+ if (selectedAdminId) {
+ const payload = { username, email };
+ if (password) {
+ payload.password = password;
+ }
+
+ const response = await apiRequest(`/admin/settings/admins/${encodeURIComponent(selectedAdminId)}`, {
+ method: 'PUT',
+ body: JSON.stringify(payload)
+ });
+
+ showBanner('success', response.message || 'Admin account updated successfully.');
+ } else {
+ if (!password) {
+ showBanner('error', 'Password is required when creating a new admin.');
+ return;
+ }
+
+ const response = await apiRequest('/admin/settings/admins', {
+ method: 'POST',
+ body: JSON.stringify({ username, email, password })
+ });
+
+ showBanner('success', response.message || 'Admin account created successfully.');
+ }
+
+ clearAccountForm();
+ await loadAdmins();
+ } catch (error) {
+ showBanner('error', error.message);
+ }
+ }
+
+ async function deleteAdmin(adminId) {
+ const account = adminCache.find(item => item.id === adminId);
+ if (!account) {
+ showBanner('error', 'Admin account not found.');
+ return;
+ }
+
+ if (adminId === sessionAdminId) {
+ showBanner('error', 'You cannot delete your own account while signed in.');
+ return;
+ }
+
+ const confirmed = window.confirm(`Delete admin account ${account.username}? This will also remove its login history.`);
+ if (!confirmed) {
+ return;
+ }
+
+ try {
+ const response = await apiRequest(`/admin/settings/admins/${encodeURIComponent(adminId)}`, { method: 'DELETE' });
+ showBanner('success', response.message || 'Admin account deleted successfully.');
+ if (selectedAdminId === adminId) {
+ clearAccountForm();
+ }
+ await loadAdmins();
+ } catch (error) {
+ showBanner('error', error.message);
  }
  }
 
@@ -395,29 +862,9 @@
  }
  }
 
- async function createAdmin() {
- const username = document.getElementById('adminUsername').value.trim();
- const email = document.getElementById('adminEmail').value.trim();
- const password = document.getElementById('adminPassword').value.trim();
-
- if (!username || !email || !password) {
- showBanner('error', 'Please fill all admin fields.');
- return;
- }
-
- try {
- const response = await apiRequest('/admin/settings/admins', {
- method: 'POST',
- body: JSON.stringify({ username, email, password })
- });
-
- showBanner('success', response.message || 'Admin account created successfully.');
- document.getElementById('adminUsername').value = '';
- document.getElementById('adminEmail').value = '';
- document.getElementById('adminPassword').value = '';
- } catch (error) {
- showBanner('error', error.message);
- }
+ function cancelAccountEdit() {
+ clearAccountForm();
+ document.getElementById('accountsBody').querySelectorAll('tr').forEach(row => row.classList.remove('selected'));
  }
 
  async function logout() {
@@ -429,7 +876,12 @@
  }
 
  (async function init() {
+ try {
  await loadSession();
+ await loadAdmins();
+ } catch (error) {
+ window.location.href = '/admin-login';
+ }
  })();
  </script>
 </body>
