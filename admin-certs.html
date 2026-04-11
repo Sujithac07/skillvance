@@ -487,6 +487,9 @@
 
  const API_BASE_URL = resolveApiBaseUrl();
  const REQUEST_TIMEOUT_MS = 2000;
+ const LIST_REQUEST_TIMEOUT_MS = 8000;
+ const LIST_RETRY_TIMEOUT_MS = 15000;
+ const AUTH_REQUEST_TIMEOUT_MS = 5000;
  let editingCertificateId = null;
  let exportBackupText = '';
  let bannerTimer = null;
@@ -661,16 +664,21 @@
  }
 
  async function apiRequest(path, options = {}) {
+ const timeoutMs = Number(options.timeoutMs);
  const hasBody = options.body !== undefined;
+
+ const requestOptions = { ...options };
+ delete requestOptions.timeoutMs;
+
  try {
  const response = await fetchWithTimeout(`${API_BASE_URL}${path}`, {
- ...options,
+ ...requestOptions,
  credentials: 'include',
  headers: {
  ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
- ...(options.headers || {})
+ ...(requestOptions.headers || {})
  }
- });
+ }, Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : REQUEST_TIMEOUT_MS);
 
  const data = await safeJson(response);
  if (!response.ok) {
@@ -731,7 +739,7 @@
 
  async function ensureSession() {
  try {
- await apiRequest('/auth/verify', { method: 'GET' });
+ await apiRequest('/auth/verify', { method: 'GET', timeoutMs: AUTH_REQUEST_TIMEOUT_MS });
  return true;
  } catch (_error) {
  window.location.href = '/admin-login';
@@ -858,7 +866,10 @@
 
  async function fetchCertificates() {
  try {
- const data = await apiRequest('/certificates?limit=1000', { method: 'GET' });
+ const data = await apiRequest('/certificates?limit=1000', {
+ method: 'GET',
+ timeoutMs: LIST_REQUEST_TIMEOUT_MS
+ });
  if (!data) {
  console.error('Empty response from API');
  throw new Error('Empty response from certificate API');
@@ -869,6 +880,17 @@
  }
  return data.certificates;
  } catch (error) {
+ if (String(error.message || '').toLowerCase().includes('timed out')) {
+ const retryData = await apiRequest('/certificates?limit=1000', {
+ method: 'GET',
+ timeoutMs: LIST_RETRY_TIMEOUT_MS
+ });
+
+ if (retryData && Array.isArray(retryData.certificates)) {
+ return retryData.certificates;
+ }
+ }
+
  console.error('Certificate fetch error:', error);
  throw error;
  }
