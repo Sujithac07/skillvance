@@ -516,7 +516,9 @@
 
  const data = await safeJson(response);
  if (!response.ok) {
- throw new Error(data?.message || `Request failed with status ${response.status}`);
+ const error = new Error(data?.message || `Request failed with status ${response.status}`);
+ error.status = response.status;
+ throw error;
  }
 
  return data;
@@ -693,9 +695,20 @@
  }
 
  async function loadSession() {
+ try {
  const data = await apiRequest('/auth/verify', { method: 'GET' });
  sessionAdminId = String(data?.user?.sub || '');
  document.title = `Admin Settings - ${data?.user?.username || 'Skillvance'}`;
+ } catch (error) {
+ if (error && (error.status === 401 || error.status === 403)) {
+ window.location.href = '/admin-login';
+ return false;
+ }
+
+ throw error;
+ }
+
+ return true;
  }
 
  async function loadAdmins() {
@@ -877,10 +890,13 @@
 
  (async function init() {
  try {
- await loadSession();
+ const isAuthenticated = await loadSession();
+ if (!isAuthenticated) {
+ return;
+ }
  await loadAdmins();
  } catch (error) {
- window.location.href = '/admin-login';
+ showBanner('error', `Failed to load admin settings: ${String(error.message || error)}`);
  }
  })();
  </script>
