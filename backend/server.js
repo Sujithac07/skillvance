@@ -275,6 +275,8 @@ app.use((req, res) => {
 app.use((err, _req, res, _next) => {
  // Preserve authentication/authorization status codes
  const status = err.status || err.statusCode || 500;
+ const includeDebug = String(process.env.DEBUG_ERRORS || '').trim().toLowerCase() === 'true'
+    || process.env.NODE_ENV !== 'production';
  
  // Never expose sensitive internal error details
  let message = 'Internal server error.';
@@ -289,7 +291,27 @@ app.use((err, _req, res, _next) => {
  message = err.message;
  }
 
- res.status(status).json({ message });
+ const payload = { message };
+ if (includeDebug) {
+  payload.debug = {
+   errorName: err.name || 'Error',
+   errorMessage: err.message || null,
+   code: err.code || null,
+   stack: typeof err.stack === 'string' ? err.stack.split('\n').slice(0, 8) : null
+  };
+ }
+
+ if (status >= 500) {
+  console.error('[API ERROR]', {
+   status,
+   name: err.name,
+   message: err.message,
+   code: err.code,
+   stack: err.stack
+  });
+ }
+
+ res.status(status).json(payload);
 });
 
 module.exports = app;
