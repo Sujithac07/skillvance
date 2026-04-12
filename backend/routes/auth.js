@@ -165,6 +165,19 @@ function parseDurationMs(duration, fallbackMs) {
  return amount * multipliers[unit];
 }
 
+function getJwtExpiryCandidates() {
+ const configured = String(process.env.JWT_EXPIRES_IN || '').trim();
+ if (!configured) {
+  return ['15m'];
+ }
+
+ if (configured === '15m') {
+  return ['15m'];
+ }
+
+ return [configured, '15m'];
+}
+
 function getRefreshTokenTtlMs() {
  return parseDurationMs(process.env.REFRESH_TOKEN_EXPIRES_IN || '30d', 30 * 24 * 60 * 60 * 1000);
 }
@@ -213,24 +226,23 @@ function signAccessToken(admin) {
   username: admin.username
  };
 
- const options = {
-  expiresIn: process.env.JWT_EXPIRES_IN || '15m',
-  keyid: process.env.JWT_KEY_ID || undefined,
-  issuer: process.env.JWT_ISSUER || 'skillvance-api',
-  audience: process.env.JWT_AUDIENCE || 'skillvance-admin'
- };
-
  const candidates = getJwtSigningCandidates();
+ const expiryCandidates = getJwtExpiryCandidates();
  let lastError = null;
 
  for (const candidate of candidates) {
+  for (const expiresIn of expiryCandidates) {
   try {
    return jwt.sign(payload, candidate.key, {
-    ...options,
+    expiresIn,
+    keyid: process.env.JWT_KEY_ID || undefined,
+    issuer: process.env.JWT_ISSUER || 'skillvance-api',
+    audience: process.env.JWT_AUDIENCE || 'skillvance-admin',
     algorithm: candidate.algorithm
    });
   } catch (error) {
    lastError = error;
+  }
   }
  }
 
@@ -301,6 +313,7 @@ async function issueRefreshToken(adminId, req) {
 
 router.post('/login', loginLimiter, async (req, res, next) => {
  try {
+  const debugErrors = String(process.env.DEBUG_ERRORS || '').trim().toLowerCase() === 'true';
   const username = String(req.body?.username || '').trim().toLowerCase();
   const password = String(req.body?.password || '');
 
@@ -336,7 +349,18 @@ router.post('/login', loginLimiter, async (req, res, next) => {
    token = signAccessToken(admin);
   } catch (signError) {
    console.error('[AUTH] JWT signing failed:', signError);
-   return res.status(503).json({ message: 'Authentication configuration error. Contact support.' });
+    if (debugErrors) {
+     return res.status(503).json({
+      message: 'Authentication configuration error. Contact support.',
+      debug: {
+      stage: 'jwt-sign',
+      errorName: signError.name || 'Error',
+      errorMessage: signError.message || String(signError)
+      }
+     });
+    }
+
+    return res.status(503).json({ message: 'Authentication configuration error. Contact support.' });
   }
 
   res.cookie(getAuthCookieName(), token, buildAuthCookieOptions());
@@ -365,6 +389,17 @@ router.post('/login', loginLimiter, async (req, res, next) => {
   });
  } catch (error) {
   console.error('[AUTH] Login error:', error);
+  if (String(process.env.DEBUG_ERRORS || '').trim().toLowerCase() === 'true') {
+   return res.status(503).json({
+    message: 'Authentication service temporarily unavailable. Please retry.',
+    debug: {
+     stage: 'login-route',
+     errorName: error.name || 'Error',
+     errorMessage: error.message || String(error)
+    }
+   });
+  }
+
   return res.status(503).json({ message: 'Authentication service temporarily unavailable. Please retry.' });
  }
 });
