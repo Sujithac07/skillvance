@@ -77,23 +77,44 @@ function getJwtAlgorithm() {
  return raw === 'RS256' ? 'RS256' : 'HS256';
 }
 
-function getJwtSigningConfig() {
+function normalizePem(value) {
+ const raw = String(value || '').trim();
+ if (!raw) {
+  return '';
+ }
+
+ // Vercel env UI often stores multiline keys with escaped newlines.
+ return raw.replace(/\\n/g, '\n');
+}
+
+function getJwtSigningCandidates() {
  const preferred = getJwtAlgorithm();
+ const candidates = [];
+
+ const rsKey = normalizePem(process.env.JWT_PRIVATE_KEY);
+ const hsSecret = String(process.env.JWT_SECRET || '').trim();
 
  if (preferred === 'RS256') {
-  const privateKey = String(process.env.JWT_PRIVATE_KEY || '').trim();
-  if (privateKey) {
-   return {
-    algorithm: 'RS256',
-    key: privateKey
-   };
+  if (rsKey) {
+   candidates.push({ algorithm: 'RS256', key: rsKey });
+  }
+  if (hsSecret) {
+   candidates.push({ algorithm: 'HS256', key: hsSecret });
+  }
+ } else {
+  if (hsSecret) {
+   candidates.push({ algorithm: 'HS256', key: hsSecret });
+  }
+  if (rsKey) {
+   candidates.push({ algorithm: 'RS256', key: rsKey });
   }
  }
 
- return {
-  algorithm: 'HS256',
-  key: getJwtSecret()
- };
+ if (!candidates.length) {
+  throw new Error('No JWT signing key is configured. Set JWT_SECRET or JWT_PRIVATE_KEY.');
+ }
+
+ return candidates;
 }
 
 function parseDurationMs(duration, fallbackMs) {
@@ -172,21 +193,33 @@ function getRefreshCookieName() {
 }
 
 function signAccessToken(admin) {
- const signing = getJwtSigningConfig();
- return jwt.sign(
-  {
-   sub: String(admin._id),
-   username: admin.username
-  },
-  signing.key,
-  {
-   expiresIn: process.env.JWT_EXPIRES_IN || '15m',
-   algorithm: signing.algorithm,
-   keyid: process.env.JWT_KEY_ID || undefined,
-   issuer: process.env.JWT_ISSUER || 'skillvance-api',
-   audience: process.env.JWT_AUDIENCE || 'skillvance-admin'
+ const payload = {
+  sub: String(admin._id),
+  username: admin.username
+ };
+
+ const options = {
+  expiresIn: process.env.JWT_EXPIRES_IN || '15m',
+  keyid: process.env.JWT_KEY_ID || undefined,
+  issuer: process.env.JWT_ISSUER || 'skillvance-api',
+  audience: process.env.JWT_AUDIENCE || 'skillvance-admin'
+ };
+
+ const candidates = getJwtSigningCandidates();
+ let lastError = null;
+
+ for (const candidate of candidates) {
+  try {
+   return jwt.sign(payload, candidate.key, {
+    ...options,
+    algorithm: candidate.algorithm
+   });
+  } catch (error) {
+   lastError = error;
   }
- );
+ }
+
+ throw lastError || new Error('Unable to sign JWT token.');
 }
 
 async function issueRefreshToken(adminId, req) {
@@ -277,6 +310,10 @@ router.post('/login', loginLimiter, async (req, res, next) => {
   });
  } catch (error) {
   console.error('[AUTH] Login error:', error);
+    if (error && (String(error.message || '').includes('JWT') || String(error.message || '').includes('private key') || String(error.message || '').includes('secretOrPrivateKey'))) {
+     error.status = 500;
+     error.message = `Authentication configuration error: ${error.message}`;
+    }
   return next(error);
  }
 });
