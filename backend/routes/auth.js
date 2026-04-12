@@ -84,7 +84,10 @@ function normalizePem(value) {
  }
 
  // Vercel env UI often stores multiline keys with escaped newlines.
- return raw.replace(/\\n/g, '\n');
+ const withoutQuotes = raw.replace(/^"([\s\S]*)"$/, '$1').replace(/^'([\s\S]*)'$/, '$1');
+ return withoutQuotes
+  .replace(/\\r\\n/g, '\n')
+  .replace(/\\n/g, '\n');
 }
 
 function getJwtSigningCandidates() {
@@ -293,7 +296,14 @@ router.post('/login', loginLimiter, async (req, res, next) => {
    return res.status(400).json({ message: 'Username and password are required.' });
   }
 
-  const admin = await Admin.findOne({ username }).select('password username email role');
+  let admin = null;
+  try {
+   admin = await Admin.findOne({ username }).maxTimeMS(2000).select('password username email role');
+  } catch (dbError) {
+   console.error('[AUTH] Login DB lookup failed:', dbError);
+   return res.status(503).json({ message: 'Authentication service temporarily unavailable. Please retry.' });
+  }
+
   if (!admin) {
    await bcrypt.compare(password, FALLBACK_PASSWORD_HASH);
    return res.status(401).json({ message: 'Invalid username or password.' });
@@ -309,7 +319,14 @@ router.post('/login', loginLimiter, async (req, res, next) => {
    await admin.save();
   }
 
-  const token = signAccessToken(admin);
+  let token;
+  try {
+   token = signAccessToken(admin);
+  } catch (signError) {
+   console.error('[AUTH] JWT signing failed:', signError);
+   return res.status(503).json({ message: 'Authentication configuration error. Contact support.' });
+  }
+
   res.cookie(getAuthCookieName(), token, buildAuthCookieOptions());
 
   try {
@@ -336,11 +353,7 @@ router.post('/login', loginLimiter, async (req, res, next) => {
   });
  } catch (error) {
   console.error('[AUTH] Login error:', error);
-    if (error && (String(error.message || '').includes('JWT') || String(error.message || '').includes('private key') || String(error.message || '').includes('secretOrPrivateKey'))) {
-     error.status = 500;
-     error.message = `Authentication configuration error: ${error.message}`;
-    }
-  return next(error);
+  return res.status(503).json({ message: 'Authentication service temporarily unavailable. Please retry.' });
  }
 });
 
