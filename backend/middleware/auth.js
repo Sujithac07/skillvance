@@ -15,43 +15,51 @@ function getJwtAlgorithm() {
  return raw === 'RS256' ? 'RS256' : 'HS256';
 }
 
-function getJwtVerificationKeys() {
- const algorithm = getJwtAlgorithm();
+function getVerificationCandidates() {
+ const candidates = [];
+ const preferredAlgorithm = getJwtAlgorithm();
 
- if (algorithm === 'RS256') {
-    const publicKeys = String(process.env.JWT_PUBLIC_KEYS || '')
-     .split('|||')
-     .map(item => item.trim())
-     .filter(Boolean);
+ const primaryPublicKey = String(process.env.JWT_PUBLIC_KEY || '').trim();
+ const publicKeys = String(process.env.JWT_PUBLIC_KEYS || '')
+  .split('|||')
+  .map(item => item.trim())
+  .filter(Boolean);
+ const rsKeys = [primaryPublicKey, ...publicKeys].filter(Boolean);
 
-    const primaryPublicKey = String(process.env.JWT_PUBLIC_KEY || '').trim();
-    const keys = [primaryPublicKey, ...publicKeys].filter(Boolean);
-
-    if (!keys.length) {
-     throw new Error('Missing required environment variable: JWT_PUBLIC_KEY for RS256 verification');
-    }
-
-    return keys;
- }
-
- const currentSecret = getJwtSecret();
- const previousSecrets = String(process.env.JWT_SECRET_PREVIOUS || '')
+ const hasHsSecret = Boolean(String(process.env.JWT_SECRET || '').trim());
+ const hsSecrets = hasHsSecret
+  ? [
+   getJwtSecret(),
+   ...String(process.env.JWT_SECRET_PREVIOUS || '')
     .split(',')
     .map(item => item.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+  ]
+  : [];
 
- return [currentSecret, ...previousSecrets];
+ if (preferredAlgorithm === 'RS256') {
+  rsKeys.forEach(key => candidates.push({ algorithm: 'RS256', key }));
+  hsSecrets.forEach(key => candidates.push({ algorithm: 'HS256', key }));
+ } else {
+  hsSecrets.forEach(key => candidates.push({ algorithm: 'HS256', key }));
+  rsKeys.forEach(key => candidates.push({ algorithm: 'RS256', key }));
+ }
+
+ if (!candidates.length) {
+  throw new Error('No JWT verification keys are configured.');
+ }
+
+ return candidates;
 }
 
 function verifyAccessToken(token) {
- const keys = getJwtVerificationKeys();
- const algorithm = getJwtAlgorithm();
+ const candidates = getVerificationCandidates();
  let lastError = null;
 
- for (const key of keys) {
+ for (const candidate of candidates) {
     try {
-     return jwt.verify(token, key, {
-        algorithms: [algorithm],
+     return jwt.verify(token, candidate.key, {
+        algorithms: [candidate.algorithm],
         issuer: process.env.JWT_ISSUER || 'skillvance-api',
         audience: process.env.JWT_AUDIENCE || 'skillvance-admin'
      });

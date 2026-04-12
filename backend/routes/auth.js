@@ -72,61 +72,28 @@ function toSafeAdminResponse(admin) {
  };
 }
 
-function buildAuthCookieOptions() {
- const isProduction = process.env.NODE_ENV === 'production';
- const sameSite = String(process.env.AUTH_COOKIE_SAMESITE || (isProduction ? 'strict' : 'lax')).toLowerCase();
-
- const allowedSameSite = new Set(['lax', 'strict', 'none']);
- const resolvedSameSite = allowedSameSite.has(sameSite) ? sameSite : (isProduction ? 'strict' : 'lax');
-
- return {
- httpOnly: true,
- secure: isProduction,
- sameSite: resolvedSameSite,
- path: '/',
- maxAge: 15 * 60 * 1000
- };
-}
-
-function buildRefreshCookieOptions() {
- const isProduction = process.env.NODE_ENV === 'production';
- const sameSite = String(process.env.REFRESH_COOKIE_SAMESITE || (isProduction ? 'strict' : 'lax')).toLowerCase();
- const allowedSameSite = new Set(['lax', 'strict', 'none']);
- const resolvedSameSite = allowedSameSite.has(sameSite) ? sameSite : (isProduction ? 'strict' : 'lax');
-
- return {
-  httpOnly: true,
-  secure: isProduction,
-  sameSite: resolvedSameSite,
-    path: '/',
-  maxAge: getRefreshTokenTtlMs()
- };
-}
-
-function getAuthCookieName() {
- return process.env.AUTH_COOKIE_NAME || 'skillvance_admin_token';
-}
-
-function getRefreshCookieName() {
- return process.env.REFRESH_COOKIE_NAME || 'skillvance_admin_refresh';
-}
-
 function getJwtAlgorithm() {
  const raw = String(process.env.JWT_ALGORITHM || 'HS256').trim().toUpperCase();
  return raw === 'RS256' ? 'RS256' : 'HS256';
 }
 
-function getJwtSigningKey() {
- if (getJwtAlgorithm() === 'RS256') {
-  const privateKey = String(process.env.JWT_PRIVATE_KEY || '').trim();
-  if (!privateKey) {
-   throw new Error('Missing required environment variable: JWT_PRIVATE_KEY for RS256 signing');
-  }
+function getJwtSigningConfig() {
+ const preferred = getJwtAlgorithm();
 
-  return privateKey;
+ if (preferred === 'RS256') {
+  const privateKey = String(process.env.JWT_PRIVATE_KEY || '').trim();
+  if (privateKey) {
+   return {
+    algorithm: 'RS256',
+    key: privateKey
+   };
+  }
  }
 
- return getJwtSecret();
+ return {
+  algorithm: 'HS256',
+  key: getJwtSecret()
+ };
 }
 
 function parseDurationMs(duration, fallbackMs) {
@@ -166,17 +133,55 @@ function getRefreshTokenTtlMs() {
  return parseDurationMs(process.env.REFRESH_TOKEN_EXPIRES_IN || '30d', 30 * 24 * 60 * 60 * 1000);
 }
 
+function buildAuthCookieOptions() {
+ const isProduction = process.env.NODE_ENV === 'production';
+ const sameSite = String(process.env.AUTH_COOKIE_SAMESITE || (isProduction ? 'strict' : 'lax')).toLowerCase();
+ const allowedSameSite = new Set(['lax', 'strict', 'none']);
+ const resolvedSameSite = allowedSameSite.has(sameSite) ? sameSite : (isProduction ? 'strict' : 'lax');
+
+ return {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: resolvedSameSite,
+  path: '/',
+  maxAge: 15 * 60 * 1000
+ };
+}
+
+function buildRefreshCookieOptions() {
+ const isProduction = process.env.NODE_ENV === 'production';
+ const sameSite = String(process.env.REFRESH_COOKIE_SAMESITE || (isProduction ? 'strict' : 'lax')).toLowerCase();
+ const allowedSameSite = new Set(['lax', 'strict', 'none']);
+ const resolvedSameSite = allowedSameSite.has(sameSite) ? sameSite : (isProduction ? 'strict' : 'lax');
+
+ return {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: resolvedSameSite,
+  path: '/',
+  maxAge: getRefreshTokenTtlMs()
+ };
+}
+
+function getAuthCookieName() {
+ return process.env.AUTH_COOKIE_NAME || 'skillvance_admin_token';
+}
+
+function getRefreshCookieName() {
+ return process.env.REFRESH_COOKIE_NAME || 'skillvance_admin_refresh';
+}
+
 function signAccessToken(admin) {
- const algorithm = getJwtAlgorithm();
+ const signing = getJwtSigningConfig();
  return jwt.sign(
   {
    sub: String(admin._id),
    username: admin.username
   },
-  getJwtSigningKey(),
+  signing.key,
   {
    expiresIn: process.env.JWT_EXPIRES_IN || '15m',
-   algorithm,
+   algorithm: signing.algorithm,
    keyid: process.env.JWT_KEY_ID || undefined,
    issuer: process.env.JWT_ISSUER || 'skillvance-api',
    audience: process.env.JWT_AUDIENCE || 'skillvance-admin'
@@ -222,64 +227,63 @@ async function issueRefreshToken(adminId, req) {
 
 router.post('/login', loginLimiter, async (req, res, next) => {
  try {
- const username = String(req.body?.username || '').trim().toLowerCase();
- const password = String(req.body?.password || '');
+  const username = String(req.body?.username || '').trim().toLowerCase();
+  const password = String(req.body?.password || '');
 
- if (!username || !password || password.length > 256) {
- console.log(`[AUTH] Login attempt - missing credentials`);
- return res.status(400).json({ message: 'Username and password are required.' });
+  if (!username || !password || password.length > 256) {
+   return res.status(400).json({ message: 'Username and password are required.' });
+  }
+
+  const admin = await Admin.findOne({ username }).select('password username email role');
+  if (!admin) {
+   await bcrypt.compare(password, FALLBACK_PASSWORD_HASH);
+   return res.status(401).json({ message: 'Invalid username or password.' });
+  }
+
+  const isValidPassword = await admin.comparePassword(password);
+  if (!isValidPassword) {
+   return res.status(401).json({ message: 'Invalid username or password.' });
+  }
+
+  if (typeof admin.needsPasswordRehash === 'function' && admin.needsPasswordRehash()) {
+   admin.password = password;
+   await admin.save();
+  }
+
+  const token = signAccessToken(admin);
+  res.cookie(getAuthCookieName(), token, buildAuthCookieOptions());
+
+  try {
+   const refreshToken = await issueRefreshToken(admin._id, req);
+   res.cookie(getRefreshCookieName(), refreshToken, buildRefreshCookieOptions());
+  } catch (refreshError) {
+   console.error('[AUTH] Refresh token issue failed, continuing with access token only:', refreshError.message);
+  }
+
+  AdminLoginHistory.create({
+   adminId: admin._id,
+   username: admin.username,
+   email: admin.email,
+   ...buildLoginClientInfo(req)
+  }).catch(historyError => {
+   console.error('[AUTH] Failed to store login history:', historyError);
+  });
+
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  return res.json({
+   message: 'Login successful.',
+   authenticated: true,
+   admin: toSafeAdminResponse(admin)
+  });
+ } catch (error) {
+  console.error('[AUTH] Login error:', error);
+  return next(error);
  }
-
- console.log(`[AUTH] Login attempt - username: ${username}`);
- const admin = await Admin.findOne({ username }).select('password username email role');
- if (!admin) {
- console.log(`[AUTH] Login failed - user not found: ${username}`);
- await bcrypt.compare(password, FALLBACK_PASSWORD_HASH);
- return res.status(401).json({ message: 'Invalid username or password.' });
- }
-
- console.log(`[AUTH] User found: ${username}, checking password`);
- const isValidPassword = await admin.comparePassword(password);
- if (!isValidPassword) {
- console.log(`[AUTH] Login failed - invalid password for: ${username}`);
- return res.status(401).json({ message: 'Invalid username or password.' });
- }
-
- console.log(`[AUTH] Password valid for ${username}, generating token`);
- if (typeof admin.needsPasswordRehash === 'function' && admin.needsPasswordRehash()) {
- admin.password = password;
- await admin.save();
- }
-
- const token = signAccessToken(admin);
- const refreshToken = await issueRefreshToken(admin._id, req);
-
- console.log(`[AUTH] Login successful for ${username}, setting cookie`);
- res.cookie(getAuthCookieName(), token, buildAuthCookieOptions());
- res.cookie(getRefreshCookieName(), refreshToken, buildRefreshCookieOptions());
-
- AdminLoginHistory.create({
- adminId: admin._id,
- username: admin.username,
- email: admin.email,
- ...buildLoginClientInfo(req)
- }).catch(historyError => {
- console.error('[AUTH] Failed to store login history:', historyError);
- });
-
- res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
- return res.json({
- message: 'Login successful.',
- authenticated: true,
- admin: {
- ...toSafeAdminResponse(admin)
- }
- });
+});
 
 router.post('/refresh', async (req, res, next) => {
  try {
-  const refreshCookieName = getRefreshCookieName();
-  const refreshTokenRaw = req.cookies ? req.cookies[refreshCookieName] : null;
+  const refreshTokenRaw = req.cookies ? req.cookies[getRefreshCookieName()] : null;
   if (!refreshTokenRaw) {
    return res.status(401).json({ message: 'Refresh token is required.' });
   }
@@ -315,35 +319,32 @@ router.post('/refresh', async (req, res, next) => {
   return next(error);
  }
 });
- } catch (error) {
- console.error(`[AUTH] Login error:`, error);
- if (req.authFromRefresh) {
-  const token = signAccessToken({
-   _id: req.user.sub,
-   username: req.user.username
+
+router.get('/verify', verifyToken, (req, res, next) => {
+ try {
+  if (req.authFromRefresh) {
+   const token = signAccessToken({
+    _id: req.user.sub,
+    username: req.user.username
+   });
+   res.cookie(getAuthCookieName(), token, buildAuthCookieOptions());
+  }
+
+  return res.json({
+   authenticated: true,
+   user: {
+    sub: req.user.sub,
+    username: req.user.username || null
+   }
   });
-
-  res.cookie(getAuthCookieName(), token, buildAuthCookieOptions());
+ } catch (error) {
+  return next(error);
  }
-
- return next(error);
- }
-});
-
-router.get('/verify', verifyToken, (req, res) => {
- return res.json({
- authenticated: true,
- user: {
-  sub: req.user.sub,
-  username: req.user.username || null
- }
- });
 });
 
 router.post('/logout', async (req, res, next) => {
  try {
-  const refreshCookieName = getRefreshCookieName();
-  const refreshTokenRaw = req.cookies ? req.cookies[refreshCookieName] : null;
+  const refreshTokenRaw = req.cookies ? req.cookies[getRefreshCookieName()] : null;
   if (refreshTokenRaw) {
    await RefreshToken.updateOne(
     { tokenHash: RefreshToken.hashToken(refreshTokenRaw) },
@@ -357,15 +358,10 @@ router.post('/logout', async (req, res, next) => {
    );
   }
 
- res.clearCookie(getAuthCookieName(), {
-    path: '/'
- });
+  res.clearCookie(getAuthCookieName(), { path: '/' });
+  res.clearCookie(getRefreshCookieName(), { path: '/' });
 
-  res.clearCookie(getRefreshCookieName(), {
-     path: '/'
-  });
-
- return res.json({ message: 'Logged out successfully.' });
+  return res.json({ message: 'Logged out successfully.' });
  } catch (error) {
   return next(error);
  }
