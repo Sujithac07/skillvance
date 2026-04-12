@@ -178,6 +178,16 @@ function getJwtExpiryCandidates() {
  return [configured, '15m'];
 }
 
+function getJwtKeyIdOption() {
+ const raw = process.env.JWT_KEY_ID;
+ if (typeof raw !== 'string') {
+  return null;
+ }
+
+ const trimmed = raw.trim();
+ return trimmed || null;
+}
+
 function getRefreshTokenTtlMs() {
  return parseDurationMs(process.env.REFRESH_TOKEN_EXPIRES_IN || '30d', 30 * 24 * 60 * 60 * 1000);
 }
@@ -228,6 +238,7 @@ function signAccessToken(admin) {
 
  const candidates = getJwtSigningCandidates();
  const expiryCandidates = getJwtExpiryCandidates();
+ const keyId = getJwtKeyIdOption();
  let lastError = null;
 
  for (const candidate of candidates) {
@@ -235,9 +246,9 @@ function signAccessToken(admin) {
   try {
    return jwt.sign(payload, candidate.key, {
     expiresIn,
-    keyid: process.env.JWT_KEY_ID || undefined,
     issuer: process.env.JWT_ISSUER || 'skillvance-api',
     audience: process.env.JWT_AUDIENCE || 'skillvance-admin',
+     ...(keyId ? { keyid: keyId } : {}),
     algorithm: candidate.algorithm
    });
   } catch (error) {
