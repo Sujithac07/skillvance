@@ -104,6 +104,7 @@ async function tryRefreshSession(req, res) {
 }
 
 async function verifyToken(req, res, next) {
+ try {
  const authHeader = req.headers.authorization || '';
  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
  const cookieName = process.env.AUTH_COOKIE_NAME || 'skillvance_admin_token';
@@ -111,24 +112,27 @@ async function verifyToken(req, res, next) {
  const token = bearerToken || cookieToken;
 
  if (!token) {
-    const refreshedUser = await tryRefreshSession(req, res);
-    if (refreshedUser) {
-     return next();
-    }
+   const refreshedUser = await tryRefreshSession(req, res);
+   if (refreshedUser) {
+    return next();
+   }
 
-    return res.status(401).json({ message: 'Authentication required.' });
+   return res.status(401).json({ message: 'Authentication required.' });
  }
 
- try {
  const payload = verifyAccessToken(token);
 
  req.user = payload;
  return next();
  } catch (error) {
     if (isTokenExpiredError(error)) {
-     const refreshedUser = await tryRefreshSession(req, res);
-     if (refreshedUser) {
-        return next();
+    try {
+      const refreshedUser = await tryRefreshSession(req, res);
+      if (refreshedUser) {
+       return next();
+      }
+    } catch (_refreshError) {
+      return res.status(401).json({ message: 'Invalid or expired token.' });
      }
     }
 

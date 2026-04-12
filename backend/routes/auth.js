@@ -83,7 +83,7 @@ function buildAuthCookieOptions() {
  httpOnly: true,
  secure: isProduction,
  sameSite: resolvedSameSite,
- path: '/api',
+ path: '/',
  maxAge: 15 * 60 * 1000
  };
 }
@@ -98,7 +98,7 @@ function buildRefreshCookieOptions() {
   httpOnly: true,
   secure: isProduction,
   sameSite: resolvedSameSite,
-  path: '/api/auth',
+    path: '/',
   maxAge: getRefreshTokenTtlMs()
  };
 }
@@ -358,11 +358,11 @@ router.post('/logout', async (req, res, next) => {
   }
 
  res.clearCookie(getAuthCookieName(), {
- path: '/api'
+    path: '/'
  });
 
   res.clearCookie(getRefreshCookieName(), {
-   path: '/api/auth'
+     path: '/'
   });
 
  return res.json({ message: 'Logged out successfully.' });
