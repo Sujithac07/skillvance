@@ -194,12 +194,6 @@
  }
  }
 
- isSessionValid().then(valid => {
- if (valid) {
- window.location.href = '/admin-certs';
- }
- });
-
  document.addEventListener('keypress', function (e) {
  if (e.key === 'Enter') {
  login();

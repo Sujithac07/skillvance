@@ -222,6 +222,32 @@ function signAccessToken(admin) {
  throw lastError || new Error('Unable to sign JWT token.');
 }
 
+function looksLikeBcryptHash(value) {
+ const hash = String(value || '');
+ return hash.startsWith('$2a$') || hash.startsWith('$2b$') || hash.startsWith('$2y$');
+}
+
+async function validateAdminPassword(admin, candidatePassword) {
+ const storedPassword = String(admin?.password || '');
+ if (!storedPassword) {
+  return { valid: false, needsRehash: false };
+ }
+
+ // Normal path: bcrypt hash in DB.
+ if (looksLikeBcryptHash(storedPassword)) {
+  try {
+   const valid = await bcrypt.compare(candidatePassword, storedPassword);
+   return { valid, needsRehash: false };
+  } catch (_error) {
+   return { valid: false, needsRehash: false };
+  }
+ }
+
+ // Legacy fallback: plaintext password stored in DB from older deployments.
+ const validLegacy = storedPassword === candidatePassword;
+ return { valid: validLegacy, needsRehash: validLegacy };
+}
+
 async function issueRefreshToken(adminId, req) {
  const refreshToken = crypto.randomBytes(48).toString('base64url');
  const jti = crypto.randomUUID();
@@ -273,12 +299,12 @@ router.post('/login', loginLimiter, async (req, res, next) => {
    return res.status(401).json({ message: 'Invalid username or password.' });
   }
 
-  const isValidPassword = await admin.comparePassword(password);
-  if (!isValidPassword) {
+  const passwordCheck = await validateAdminPassword(admin, password);
+  if (!passwordCheck.valid) {
    return res.status(401).json({ message: 'Invalid username or password.' });
   }
 
-  if (typeof admin.needsPasswordRehash === 'function' && admin.needsPasswordRehash()) {
+  if (passwordCheck.needsRehash || (typeof admin.needsPasswordRehash === 'function' && admin.needsPasswordRehash())) {
    admin.password = password;
    await admin.save();
   }
