@@ -167,7 +167,6 @@
  }
 
  try {
- console.log('[LOGIN] Attempting login for:', username);
  const response = await fetchWithTimeout(`${API_BASE_URL}/auth/login`, {
  method: 'POST',
  credentials: 'include',
@@ -177,21 +176,16 @@
  body: JSON.stringify({ username, password })
  });
 
- console.log('[LOGIN] Response status:', response.status);
  const data = await safeJson(response);
- console.log('[LOGIN] Response data:', data);
  
  if (!response.ok) {
  const message = data?.message || `Login failed (${response.status})`;
- console.error('[LOGIN] Error:', message);
  errorMsg.innerHTML = `<div class="error">${message}</div>`;
  return;
  }
  
- console.log('[LOGIN] Success - redirecting to admin panel');
  window.location.href = '/admin-certs';
  } catch (error) {
- console.error('[LOGIN] Network error:', error);
  const isTimeout = error && (error.name === 'AbortError');
  const message = isTimeout
  ? 'Login request timed out. Please ensure backend is running on localhost:5000 and try again.'

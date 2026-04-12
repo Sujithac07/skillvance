@@ -148,12 +148,23 @@ async function initializeApp() {
  return;
  }
 
- if (!process.env.JWT_SECRET) {
- throw new Error('Missing required environment variable: JWT_SECRET');
- }
+ const jwtAlgorithm = String(process.env.JWT_ALGORITHM || 'HS256').trim().toUpperCase();
+ if (jwtAlgorithm === 'RS256') {
+  if (!process.env.JWT_PRIVATE_KEY) {
+   throw new Error('Missing required environment variable: JWT_PRIVATE_KEY for RS256');
+  }
 
- if (String(process.env.JWT_SECRET).length < 32) {
- throw new Error('JWT_SECRET must be at least 32 characters long');
+  if (!process.env.JWT_PUBLIC_KEY) {
+   throw new Error('Missing required environment variable: JWT_PUBLIC_KEY for RS256');
+  }
+ } else {
+  if (!process.env.JWT_SECRET) {
+   throw new Error('Missing required environment variable: JWT_SECRET');
+  }
+
+  if (String(process.env.JWT_SECRET).length < 32) {
+   throw new Error('JWT_SECRET must be at least 32 characters long');
+  }
  }
 
  await connectDB();

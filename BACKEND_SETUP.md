@@ -20,9 +20,20 @@ Use these in local `.env` and in Vercel Project Settings:
 - `NODE_ENV`
 - `MONGODB_URI`
 - `JWT_SECRET`
+- `JWT_SECRET_PREVIOUS` (optional, comma-separated previous secrets for key rotation)
+- `JWT_ALGORITHM` (`HS256` default, or `RS256`)
+- `JWT_KEY_ID` (optional key identifier)
+- `JWT_PRIVATE_KEY` (required when `JWT_ALGORITHM=RS256`)
+- `JWT_PUBLIC_KEY` (required when `JWT_ALGORITHM=RS256`)
+- `JWT_PUBLIC_KEYS` (optional, `|||`-separated previous public keys for rotation)
 - `JWT_ISSUER`
 - `JWT_AUDIENCE`
 - `JWT_EXPIRES_IN`
+- `REFRESH_TOKEN_EXPIRES_IN` (default `30d`)
+- `REFRESH_COOKIE_NAME` (optional, default `skillvance_admin_refresh`)
+- `REFRESH_COOKIE_SAMESITE` (default `strict` in production)
+- `REFRESH_ALLOW_MULTI_SESSION` (`false` by default)
+- `PUBLIC_APP_URL` (for canonical verification URL generation)
 - `ADMIN_USERNAME`
 - `ADMIN_PASSWORD`
 - `ADMIN_EMAIL`
@@ -83,14 +94,24 @@ npx serve .
 
 1. Backend log prints server running on localhost:5000.
 2. `/api/health` returns `status: "OK"`.
-3. `POST /api/auth/login` returns token JSON (not HTML, not 404/501).
+3. `POST /api/auth/login` sets access + refresh cookies and returns authenticated JSON (not HTML, not 404/501).
 4. `GET /api/certificates` with token returns data or auth error (401 if token missing), not 501.
+5. Public verify URL works with URL encoded query format:
+
+```text
+https://www.skillvancetechnologies.com/verify?certId=SKV2025ML01203
+```
+
+6. `GET /api/certificates/verify/:id` response includes:
+ - `verificationUrl`
+ - `qrCodeUrl`
 
 ## API Endpoints
 
 ### Auth
 
 - `POST /api/auth/login`
+- `POST /api/auth/refresh`
 - `GET /api/auth/verify`
 - `POST /api/auth/logout`
 
@@ -113,8 +134,12 @@ npx serve .
 
 - Password hashing with bcrypt (`Admin` model pre-save hook)
 - JWT signed with required secret and strict algorithm
+- Optional RS256 JWT signing/verification mode
+- JWT key rotation support (`JWT_SECRET_PREVIOUS` / `JWT_PUBLIC_KEYS`)
 - Issuer/audience validation on token verify
+- Refresh-token rotation and revocation persistence
 - Login rate limiting
 - CORS allowlist support via `CORS_ORIGIN`
 - Request body size limit (1mb)
 - Certificate ID uniqueness and schema validation
+- Canonical URL-encoded verification links and QR URL generation

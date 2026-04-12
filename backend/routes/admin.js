@@ -55,6 +55,52 @@ function toAccountResponse(admin, summary = {}) {
  };
 }
 
+function maskEmail(email) {
+ const value = String(email || '').trim();
+ if (!value || !value.includes('@')) {
+  return '***';
+ }
+
+ const [localPart, domainPart] = value.split('@');
+ const safeLocal = localPart.length <= 2
+  ? `${localPart.charAt(0) || '*'}*`
+  : `${localPart.slice(0, 2)}***`;
+
+ if (!domainPart) {
+  return `${safeLocal}@***`;
+ }
+
+ const [domainName, ...restDomain] = domainPart.split('.');
+ const safeDomainName = domainName.length <= 2
+  ? `${domainName.charAt(0) || '*'}*`
+  : `${domainName.slice(0, 2)}***`;
+ const tld = restDomain.length ? `.${restDomain.join('.')}` : '';
+
+ return `${safeLocal}@${safeDomainName}${tld}`;
+}
+
+function maskRole(role) {
+ const value = String(role || '').trim();
+ if (!value) {
+  return '***';
+ }
+
+ if (value.length <= 2) {
+  return `${value.charAt(0) || '*'}*`;
+ }
+
+ return `${value.charAt(0)}***${value.charAt(value.length - 1)}`;
+}
+
+function toRedactedAccountResponse(admin, summary = {}) {
+ const account = toAccountResponse(admin, summary);
+ return {
+  ...account,
+  email: maskEmail(account.email),
+  role: maskRole(account.role)
+ };
+}
+
 async function loadLoginSummaries(adminIds) {
  if (!adminIds.length) {
  return new Map();
@@ -219,7 +265,7 @@ router.post('/settings/admins', verifyToken, isAdmin, async (req, res, next) => 
 
  return res.status(201).json({
  message: 'Admin account created successfully.',
- admin: toAccountResponse(createdAdmin)
+ admin: toRedactedAccountResponse(createdAdmin)
  });
  } catch (error) {
  if (error.code === 11000) {
@@ -307,7 +353,7 @@ router.put('/settings/admins/:adminId', verifyToken, isAdmin, async (req, res, n
 
  return res.json({
  message: 'Admin account updated successfully.',
- admin: toAccountResponse(admin)
+ admin: toRedactedAccountResponse(admin)
  });
  } catch (error) {
  if (error.code === 11000) {

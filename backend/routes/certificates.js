@@ -25,6 +25,46 @@ const verifyLimiter = rateLimit({
  message: { message: 'Too many verification attempts. Try again later.' }
 });
 
+function getPublicBaseUrl(req) {
+ const configured = String(process.env.PUBLIC_APP_URL || '').trim();
+ if (configured) {
+  return configured.replace(/\/$/, '');
+ }
+
+ if (!req) {
+  return 'https://www.skillvancetechnologies.com';
+ }
+
+ const protocol = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
+ const host = String(req.headers['x-forwarded-host'] || req.get('host') || '').split(',')[0].trim();
+ if (!host) {
+  return 'https://www.skillvancetechnologies.com';
+ }
+
+ return `${protocol}://${host}`.replace(/\/$/, '');
+}
+
+function buildVerificationUrl(certId, req) {
+ const id = String(certId || '').trim().toUpperCase();
+ const baseUrl = getPublicBaseUrl(req);
+ const query = new URLSearchParams({ certId: id });
+ return `${baseUrl}/verify?${query.toString()}`;
+}
+
+function buildQrImageUrl(verificationUrl) {
+ const encoded = encodeURIComponent(String(verificationUrl || ''));
+ return `https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=${encoded}`;
+}
+
+function toApiCertificate(certificate, req) {
+ const verificationUrl = buildVerificationUrl(certificate.id, req);
+ return {
+  ...certificate,
+  verificationUrl,
+  qrCodeUrl: buildQrImageUrl(verificationUrl)
+ };
+}
+
 function parseScore(value) {
  if (value === undefined || value === null || value === '') {
  return undefined;
@@ -213,7 +253,9 @@ router.get('/verify/:id', verifyLimiter, async (req, res, next) => {
  score: certificate.score,
  mentorName: certificate.mentorName,
  verificationCount: certificate.verificationCount,
- lastVerifiedAt: certificate.lastVerifiedAt
+ lastVerifiedAt: certificate.lastVerifiedAt,
+ verificationUrl: buildVerificationUrl(certificate.id, req),
+ qrCodeUrl: buildQrImageUrl(buildVerificationUrl(certificate.id, req))
  }
  });
  } catch (error) {
@@ -226,10 +268,6 @@ router.get('/', verifyToken, isAdmin, async (req, res, next) => {
  // Double-check authentication - should not reach here without valid auth
  if (!req.user) {
  return res.status(401).json({ message: 'Authentication required.' });
- }
-
- if (req.user.role !== 'admin') {
- return res.status(403).json({ message: 'Admin access required.' });
  }
 
  const rawLimit = Number(req.query.limit || 100);
@@ -248,7 +286,7 @@ router.get('/', verifyToken, isAdmin, async (req, res, next) => {
  certificateListCache.data = certificates;
  certificateListCache.expiresAt = Date.now() + LIST_CACHE_TTL_MS;
 
- return res.json({ certificates });
+ return res.json({ certificates: certificates.map(certificate => toApiCertificate(certificate, req)) });
  } catch (error) {
  return next(error);
  }
@@ -351,7 +389,7 @@ router.post('/', verifyToken, isAdmin, async (req, res, next) => {
 
  return res.status(201).json({
  message: 'Certificate created successfully.',
- certificate: created
+ certificate: toApiCertificate(created.toObject ? created.toObject() : created, req)
  });
  } catch (error) {
  if (error.code === 11000) {
@@ -406,7 +444,7 @@ router.put('/:id', verifyToken, isAdmin, async (req, res, next) => {
 
  return res.json({
  message: 'Certificate updated successfully.',
- certificate
+ certificate: toApiCertificate(certificate.toObject ? certificate.toObject() : certificate, req)
  });
  } catch (error) {
  return next(error);

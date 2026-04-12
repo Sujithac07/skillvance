@@ -41,6 +41,10 @@ async function verifyCertificate() {
  result.style.display = 'block';
  result.innerHTML = '<p style="text-align:center;color:var(--text-muted)">Verifying...</p>';
 
+ const verifyUrl = new URL(window.location.href);
+ verifyUrl.searchParams.set('certId', id);
+ window.history.replaceState(null, '', verifyUrl.toString());
+
  try {
  const response = await fetch(`${API_BASE_URL}/certificates/verify/${encodeURIComponent(id)}`);
  const data = await safeJson(response);
@@ -86,3 +90,20 @@ async function verifyCertificate() {
  result.innerHTML = '<p style="color:#ef4444">Unable to verify right now. Please try again in a moment.</p>';
  }
 }
+
+function initializeVerificationFromQuery() {
+ const params = new URLSearchParams(window.location.search || '');
+ const certId = String(params.get('certId') || '').trim().toUpperCase();
+ if (!certId) {
+  return;
+ }
+
+ const idInput = document.getElementById('certId');
+ if (idInput) {
+  idInput.value = certId;
+ }
+
+ verifyCertificate();
+}
+
+document.addEventListener('DOMContentLoaded', initializeVerificationFromQuery);

@@ -572,8 +572,12 @@
  }
 
  function normalizeCertificate(certificate) {
+ const normalizedId = String(certificate?.id || '').trim().toUpperCase();
+ const verificationUrl = String(certificate?.verificationUrl || '').trim() || buildVerificationUrl(normalizedId);
+ const qrCodeUrl = String(certificate?.qrCodeUrl || '').trim() || buildQrCodeUrl(verificationUrl);
+
  return {
- id: String(certificate?.id || '').trim().toUpperCase(),
+ id: normalizedId,
  name: String(certificate?.name || '').trim(),
  domain: String(certificate?.domain || '').trim(),
  email: String(certificate?.email || '').trim(),
@@ -583,9 +587,58 @@
  verified: certificate?.verified !== false,
  verificationCount: Number.isFinite(Number(certificate?.verificationCount)) ? Number(certificate.verificationCount) : 0,
  verifiedIPs: Array.isArray(certificate?.verifiedIPs) ? certificate.verifiedIPs : [],
- lastVerifiedAt: certificate?.lastVerifiedAt ? new Date(certificate.lastVerifiedAt).toISOString() : ''
+ lastVerifiedAt: certificate?.lastVerifiedAt ? new Date(certificate.lastVerifiedAt).toISOString() : '',
+ verificationUrl,
+ qrCodeUrl
  };
  }
+
+function buildVerificationUrl(certId) {
+ const base = `${window.location.origin}/verify`;
+ const query = new URLSearchParams({ certId: String(certId || '').trim().toUpperCase() });
+ return `${base}?${query.toString()}`;
+}
+
+function buildQrCodeUrl(verificationUrl) {
+ return `https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=${encodeURIComponent(String(verificationUrl || ''))}`;
+}
+
+function copyTextToClipboard(text, successMessage) {
+ const value = String(text || '').trim();
+ if (!value) {
+  showBanner('error', 'Nothing to copy.');
+  return;
+ }
+
+ if (navigator.clipboard && window.isSecureContext) {
+  navigator.clipboard.writeText(value)
+   .then(() => showBanner('success', successMessage))
+   .catch(() => fallbackCopy(value, successMessage));
+  return;
+ }
+
+ fallbackCopy(value, successMessage);
+}
+
+function copyVerificationUrl(certId) {
+ const certificate = certificateCache.find(item => item.id === certId);
+ if (!certificate) {
+  showBanner('error', 'Certificate not found.');
+  return;
+ }
+
+ copyTextToClipboard(certificate.verificationUrl || buildVerificationUrl(certificate.id), `Verification URL copied for ${certificate.id}.`);
+}
+
+function copyQrCodeUrl(certId) {
+ const certificate = certificateCache.find(item => item.id === certId);
+ if (!certificate) {
+  showBanner('error', 'Certificate not found.');
+  return;
+ }
+
+ copyTextToClipboard(certificate.qrCodeUrl || buildQrCodeUrl(certificate.verificationUrl || buildVerificationUrl(certificate.id)), `QR image URL copied for ${certificate.id}.`);
+}
 
  function buildBackupPayload(certificates) {
  return {
@@ -908,6 +961,8 @@
  <td data-label="Action">
  <div class="actions">
  <button type="button" class="secondary-btn" onclick="startEdit('${escapeHtml(certificate.id)}')">Edit</button>
+ <button type="button" class="ghost-btn" onclick="copyVerificationUrl('${escapeHtml(certificate.id)}')">Copy Verify URL</button>
+ <button type="button" class="ghost-btn" onclick="copyQrCodeUrl('${escapeHtml(certificate.id)}')">Copy QR URL</button>
  <button type="button" class="danger-btn" onclick="deleteCertificate('${escapeHtml(certificate.id)}')">Delete</button>
  </div>
  </td>
@@ -968,7 +1023,7 @@
  fallbackCopy(exportBackupText);
  }
 
- function fallbackCopy(text) {
+function fallbackCopy(text, successMessage = 'Backup JSON copied to clipboard.') {
  const helper = document.createElement('textarea');
  helper.value = text;
  helper.setAttribute('readonly', 'true');
@@ -978,7 +1033,7 @@
  helper.select();
  document.execCommand('copy');
  document.body.removeChild(helper);
- showBanner('success', 'Backup JSON copied to clipboard.');
+ showBanner('success', successMessage);
  }
 
  function downloadAsFile() {
