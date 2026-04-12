@@ -150,12 +150,12 @@ async function initializeApp() {
 
  const jwtAlgorithm = String(process.env.JWT_ALGORITHM || 'HS256').trim().toUpperCase();
  if (jwtAlgorithm === 'RS256') {
-  if (!process.env.JWT_PRIVATE_KEY) {
-   throw new Error('Missing required environment variable: JWT_PRIVATE_KEY for RS256');
-  }
+   const hasPrivate = Boolean(String(process.env.JWT_PRIVATE_KEY || '').trim());
+   const hasPublic = Boolean(String(process.env.JWT_PUBLIC_KEY || '').trim());
+   const hasHsSecret = Boolean(String(process.env.JWT_SECRET || '').trim());
 
-  if (!process.env.JWT_PUBLIC_KEY) {
-   throw new Error('Missing required environment variable: JWT_PUBLIC_KEY for RS256');
+   if ((!hasPrivate || !hasPublic) && !hasHsSecret) {
+    throw new Error('Missing JWT config: provide RS256 keys or JWT_SECRET fallback');
   }
  } else {
   if (!process.env.JWT_SECRET) {

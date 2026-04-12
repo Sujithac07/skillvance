@@ -90,12 +90,24 @@ function normalizePem(value) {
   .replace(/\\n/g, '\n');
 }
 
+function getDerivedFallbackSecret() {
+ const raw = normalizePem(process.env.JWT_SECRET)
+  || normalizePem(process.env.JWT_PRIVATE_KEY)
+  || normalizePem(process.env.JWT_PUBLIC_KEY);
+
+ if (!raw) {
+  return '';
+ }
+
+ return crypto.createHash('sha256').update(raw, 'utf8').digest('hex');
+}
+
 function getJwtSigningCandidates() {
  const preferred = getJwtAlgorithm();
  const candidates = [];
 
  const rsKey = normalizePem(process.env.JWT_PRIVATE_KEY);
- const hsSecret = String(process.env.JWT_SECRET || '').trim();
+ const hsSecret = normalizePem(process.env.JWT_SECRET) || getDerivedFallbackSecret();
 
  if (preferred === 'RS256') {
   if (rsKey) {

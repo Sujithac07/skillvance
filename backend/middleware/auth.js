@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const Admin = require('../models/Admin');
 const RefreshToken = require('../models/RefreshToken');
 
@@ -15,24 +16,49 @@ function getJwtAlgorithm() {
  return raw === 'RS256' ? 'RS256' : 'HS256';
 }
 
+function normalizePem(value) {
+ const raw = String(value || '').trim();
+ if (!raw) {
+   return '';
+ }
+
+ const withoutQuotes = raw.replace(/^"([\s\S]*)"$/, '$1').replace(/^'([\s\S]*)'$/, '$1');
+ return withoutQuotes
+   .replace(/\\r\\n/g, '\n')
+   .replace(/\\n/g, '\n');
+}
+
+function getDerivedFallbackSecret() {
+ const raw = normalizePem(process.env.JWT_SECRET)
+   || normalizePem(process.env.JWT_PRIVATE_KEY)
+   || normalizePem(process.env.JWT_PUBLIC_KEY);
+
+ if (!raw) {
+   return '';
+ }
+
+ return crypto.createHash('sha256').update(raw, 'utf8').digest('hex');
+}
+
 function getVerificationCandidates() {
  const candidates = [];
  const preferredAlgorithm = getJwtAlgorithm();
 
- const primaryPublicKey = String(process.env.JWT_PUBLIC_KEY || '').trim();
+ const primaryPublicKey = normalizePem(process.env.JWT_PUBLIC_KEY);
  const publicKeys = String(process.env.JWT_PUBLIC_KEYS || '')
   .split('|||')
-  .map(item => item.trim())
+  .map(item => normalizePem(item))
   .filter(Boolean);
  const rsKeys = [primaryPublicKey, ...publicKeys].filter(Boolean);
 
- const hasHsSecret = Boolean(String(process.env.JWT_SECRET || '').trim());
+ const hsPrimarySecret = normalizePem(process.env.JWT_SECRET) || getDerivedFallbackSecret();
+ const hasHsSecret = Boolean(hsPrimarySecret);
  const hsSecrets = hasHsSecret
   ? [
-   getJwtSecret(),
+    hsPrimarySecret,
    ...String(process.env.JWT_SECRET_PREVIOUS || '')
     .split(',')
-    .map(item => item.trim())
+      .map(item => normalizePem(item))
     .filter(Boolean)
   ]
   : [];
