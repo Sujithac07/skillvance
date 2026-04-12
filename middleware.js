@@ -47,7 +47,6 @@ export default async function middleware(request) {
  }
 
  const loginUrl = new URL('/admin-login', request.url);
- loginUrl.searchParams.set('from', pathname);
  return Response.redirect(loginUrl, 307);
 }
 
